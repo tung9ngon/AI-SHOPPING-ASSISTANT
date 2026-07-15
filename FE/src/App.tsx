@@ -5,6 +5,8 @@ import Placeholder from './pages/Placeholder';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import HomePage from './pages/home/HomePage';
+import ProductsPage from './pages/products/ProductsPage';
 
 // Bản đồ tuyến (route map). Các màn hình sẽ lần lượt được thay thế
 // từ <Placeholder> sang trang thật qua từng bước.
@@ -13,10 +15,10 @@ export default function App() {
     <Routes>
       {/* ===== Khu vực người dùng ===== */}
       <Route element={<UserLayout />}>
-        <Route path="/" element={<Placeholder name="Trang chủ" />} />
-        <Route path="/products" element={<Placeholder name="Danh sách sản phẩm" />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/products" element={<ProductsPage />} />
+        {/* Danh mục dùng chung trang sản phẩm với filter /products?categoryId=... */}
         <Route path="/products/:id" element={<Placeholder name="Chi tiết sản phẩm" />} />
-        <Route path="/categories/:id" element={<Placeholder name="Danh mục" />} />
         <Route path="/cart" element={<Placeholder name="Giỏ hàng" />} />
 
         <Route
