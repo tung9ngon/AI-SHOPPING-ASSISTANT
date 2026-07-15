@@ -9,6 +9,7 @@ import { Link, Outlet, useNavigate } from 'react-router-dom';
 import type { MenuProps } from 'antd';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import ChatWidget from '../components/ChatWidget/ChatWidget';
 
 const { Header, Content, Footer } = Layout;
 
@@ -112,9 +113,12 @@ export default function UserLayout() {
         <Outlet />
       </Content>
 
-      <Footer style={{ textAlign: 'center' }}>
+      <Footer style={{ textAlign: 'center', background: '#090620', color: 'rgba(255,255,255,0.55)' }}>
         AI Shopping Assistant ©{new Date().getFullYear()} — Đồ án
       </Footer>
+
+      {/* Trợ lý AI nổi ở góc màn hình (mọi trang user) */}
+      <ChatWidget />
     </Layout>
   );
 }
