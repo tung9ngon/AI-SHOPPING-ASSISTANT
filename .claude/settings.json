@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo \"exit=$?\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(grep -rn -B2 -A10 \"var required\\\\$1\\\\|const required =\" /Users/tung/Documents/nam4ki1/AI_Shopping_Assitant/FE/node_modules/async-validator/dist-node/index.js)",
+      "Bash([ -f \"$JOURNAL\" ])",
+      "Bash(python3 -c ' *)",
+      "Bash(xargs ls)",
+      "Bash(node run.js /tmp/playwright-test-detail-regression.js)"
+    ]
+  }
+}
