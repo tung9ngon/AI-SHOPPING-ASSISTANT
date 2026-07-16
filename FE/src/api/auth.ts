@@ -18,6 +18,8 @@ export const authApi = {
     api.post<{ user: AuthUser }>('/auth/login', { email, password }),
   logout: () => api.post('/auth/logout'),
   refresh: () => api.post('/auth/refresh'),
+  // Lấy user hiện tại từ cookie (nguồn sự thật). 401 nếu phiên không hợp lệ.
+  me: () => api.get<AuthUser>('/auth/me'),
 
   // URL bắt đầu luồng OAuth (điều hướng cả trình duyệt sang backend)
   googleUrl: '/api/auth/google',

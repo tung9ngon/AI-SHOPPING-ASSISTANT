@@ -11,7 +11,12 @@ import {
   VerifyResetOtpDto,
   ResetPasswordDto,
 } from './auth.dto';
-import { GoogleAuthGuard, FacebookAuthGuard, JwtRefreshGuard } from './auth.guard';
+import {
+  GoogleAuthGuard,
+  FacebookAuthGuard,
+  JwtRefreshGuard,
+  JwtAccessGuard,
+} from './auth.guard';
 import { CurrentUser } from './auth.decorator';
 
 const COOKIE_OPTIONS = {
@@ -50,11 +55,11 @@ export class AuthController {
   private setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
     res.cookie('access_token', accessToken, {
       ...COOKIE_OPTIONS,
-      maxAge: parseExpiryToMs(this.config.get<string>('jwt.accessExpiresIn'), 15 * 60 * 1000),
+      maxAge: parseExpiryToMs(this.config.get<string>('jwt.accessExpiresIn'), 60 * 1000),
     });
     res.cookie('refresh_token', refreshToken, {
       ...COOKIE_OPTIONS,
-      maxAge: parseExpiryToMs(this.config.get<string>('jwt.refreshExpiresIn'), 7 * 24 * 60 * 60 * 1000),
+      maxAge: parseExpiryToMs(this.config.get<string>('jwt.refreshExpiresIn'), 60 * 1000),
     });
   }
 
@@ -100,6 +105,14 @@ register(@Body() dto: RegisterDto) {
     const { accessToken, refreshToken } = await this.authService.issueTokens(user);
     this.setAuthCookies(res, accessToken, refreshToken);
     return { message: 'Đăng nhập thành công', user: { id: user.id, email: user.email, full_name: user.full_name } };
+  }
+
+  // Lấy thông tin user hiện tại từ cookie access_token (JwtAccessGuard tự refresh
+  // ngầm bằng refresh_token nếu access_token hết hạn). Trả 401 nếu phiên không hợp lệ.
+  @UseGuards(JwtAccessGuard)
+  @Get('me')
+  me(@CurrentUser() user: any) {
+    return this.authService.getMe(user.sub);
   }
 
   @Post('logout')
