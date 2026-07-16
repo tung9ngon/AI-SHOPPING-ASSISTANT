@@ -94,6 +94,19 @@ export class AuthService {
     return { message: 'Đăng ký thành công, có thể đăng nhập ngay' };
   }
 
+  // Trả thông tin user hiện tại cho FE (thay cho việc FE tự đọc cookie httpOnly).
+  async getMe(userId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('Phiên không hợp lệ');
+    return {
+      id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      role: user.role,
+      avatar_url: user.avatar_url,
+    };
+  }
+
   async validateLocalUser(dto: LoginDto) {
     const user = await this.userRepo.findOne({ where: { email: dto.email } });
     if (!user || !user.password_hash) throw new UnauthorizedException('Sai email hoặc mật khẩu');
