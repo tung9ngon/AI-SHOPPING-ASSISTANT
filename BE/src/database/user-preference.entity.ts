@@ -1,38 +1,51 @@
-import { Entity, PrimaryColumn, Column, UpdateDateColumn, OneToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToOne,
+  JoinColumn,
+} from 'typeorm';
 import { User } from './user.entity';
 
 @Entity('user_preferences')
 export class UserPreference {
-  // 1 user có 1 hồ sơ
-  @PrimaryColumn({ type: 'uuid' })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'uuid', unique: true })
   user_id: string;
 
-  @OneToOne(() => User, (user) => user.preference, { onDelete: 'CASCADE' })
+  // Quan hệ 1 chiều tới User, không cần sửa user.entity.ts để thêm field inverse
+  @OneToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  // Danh mục quan tâm kèm trọng số, VD: {"laptop":0.8,"dien_thoai":0.5}
+  // Danh mục sản phẩm người dùng quan tâm
   @Column({ type: 'json', nullable: true })
-  preferred_categories: Record<string, number> | null;
+  preferred_categories: string[] | null;
 
-  // Khoảng ngân sách hay tìm, VD: {"min":10000000,"max":20000000}
+  // Khoảng ngân sách ưa thích, vd { min: 100000, max: 2000000 }
   @Column({ type: 'json', nullable: true })
   budget_range: { min: number; max: number } | null;
 
-  // Thương hiệu ưa thích, VD: ["Apple","Dell"]
+  // Thương hiệu ưa thích
   @Column({ type: 'json', nullable: true })
   preferred_brands: string[] | null;
 
-  // Thuộc tính quan tâm: pin tốt, mỏng nhẹ, hiệu năng cao...
+  // Thuộc tính khác (màu sắc, chất liệu, kiểu dáng...), lưu tự do dạng key-value
   @Column({ type: 'json', nullable: true })
-  preferred_attributes: string[] | null;
+  preferred_attributes: Record<string, any> | null;
 
-  // Tóm tắt nhu cầu gần nhất để AI gợi lại ngay khi user quay lại
+  // Do pipeline AI tự ghi lại từ hành vi / ý định mua sắm gần nhất.
+  // KHÔNG cho user tự sửa qua API (không có trong UpdatePreferencesDto).
   @Column({ type: 'text', nullable: true })
   last_intent_summary: string | null;
 
-  // Cập nhật mỗi khi có event mới hoặc job tổng hợp định kỳ
+  @CreateDateColumn({ type: 'timestamp' })
+  created_at: Date;
+
   @UpdateDateColumn({ type: 'timestamp' })
   updated_at: Date;
 }
-
