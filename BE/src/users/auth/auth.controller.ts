@@ -55,11 +55,11 @@ export class AuthController {
   private setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
     res.cookie('access_token', accessToken, {
       ...COOKIE_OPTIONS,
-      maxAge: parseExpiryToMs(this.config.get<string>('jwt.accessExpiresIn'), 60 * 1000),
+      maxAge: parseExpiryToMs(this.config.get<string>('jwt.accessExpiresIn'), 24 * 60 * 60 * 1000),
     });
     res.cookie('refresh_token', refreshToken, {
       ...COOKIE_OPTIONS,
-      maxAge: parseExpiryToMs(this.config.get<string>('jwt.refreshExpiresIn'), 60 * 1000),
+      maxAge: parseExpiryToMs(this.config.get<string>('jwt.refreshExpiresIn'), 7 * 24 * 60 * 60 * 1000),
     });
   }
 

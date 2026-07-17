@@ -69,23 +69,24 @@ export interface ProductReview {
   user?: { id: string; full_name: string; avatar_url?: string | null };
 }
 
-// ---- Cart ----
-export interface CartItem {
+// ---- Cart (khớp CHÍNH XÁC response GET /api/cart) ----
+export interface CartItemProduct {
   id: string;
-  cart_id: string;
-  product_id: string;
+  name: string;
+  price: string | number; // decimal -> string ở runtime
+  image: string | null; // URL ảnh primary hoặc null (KHÔNG phải mảng)
+}
+
+export interface CartItem {
+  id: string; // = cart_item id (dùng cho PUT/DELETE)
+  product: CartItemProduct;
   quantity: number;
-  product?: Product;
-  added_at: string;
-  updated_at: string;
 }
 
 export interface Cart {
   id: string;
-  user_id: string;
   items: CartItem[];
-  created_at: string;
-  updated_at: string;
+  subtotal: number; // BE tính sẵn (number)
 }
 
 // ---- Order ----

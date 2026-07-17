@@ -10,11 +10,12 @@ export class PaymentController {
 
   @Post()
   create(@Body() dto: CreatePaymentDto, @Req() req: any) {
-    return this.paymentService.create(req.user.id, dto);
+    // JWT payload dùng `sub` cho user id (không có `id`).
+    return this.paymentService.create(req.user.sub, dto);
   }
 
   @Get(':id/status')
   getStatus(@Param('id') id: string, @Req() req: any) {
-    return this.paymentService.getStatus(req.user.id, id);
+    return this.paymentService.getStatus(req.user.sub, id);
   }
 }

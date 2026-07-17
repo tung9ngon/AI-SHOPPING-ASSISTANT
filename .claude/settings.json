@@ -13,7 +13,13 @@
       "Bash(curl -s -o /dev/null -w \"  GET /api/products qua :3000 -> HTTP %{http_code}\\\\n\" \"http://localhost:3000/api/products?limit=1\")",
       "Bash(echo \"FE exit=$?\")",
       "Bash(echo \"BE exit=$?\")",
-      "Bash(node run.js /tmp/playwright-test-authme.js)"
+      "Bash(node run.js /tmp/playwright-test-authme.js)",
+      "Bash(curl -s -b /private/tmp/claude-501/-Users-tung-Documents-nam4ki1-AI-Shopping-Assitant/f680f886-c77e-489d-b19a-848e3bab4105/scratchpad/cookies2.txt http://localhost:8000/api/cart)",
+      "Bash(node run.js /tmp/playwright-test-cart.js)",
+      "Bash(node run.js /tmp/playwright-test-checkout.js)",
+      "Bash(curl -s -o /dev/null -w \"BE :8000 -> %{http_code}\\\\n\" http://localhost:8000/api/products)",
+      "Bash(curl -s -o /dev/null -w \"FE :3000 -> %{http_code}\\\\n\" http://localhost:3000)",
+      "Bash(node run.js /tmp/playwright-test-checkout2.js)"
     ]
   }
 }
