@@ -15,6 +15,7 @@ import { CreatePaymentDto } from './payment.dto';
 import { generateProviderOrderCode } from './provider-order-code.util';
 import { PAYOS_CLIENT } from '../../config/payos';
 import { PayOS } from '@payos/node';
+import { PaymentCoreService } from './payment-core.service';
 
 @Injectable()
 export class PaymentService {
@@ -25,6 +26,7 @@ export class PaymentService {
     private readonly paymentRepo: Repository<Payment>,
     private readonly config: ConfigService,
     @Inject(PAYOS_CLIENT) private readonly payos: PayOS,
+    private readonly paymentCore: PaymentCoreService,
   ) {}
 
   // POST /api/payments
@@ -59,6 +61,8 @@ export class PaymentService {
     const saved = await this.paymentRepo.save(payment);
 
     let payment_url: string | null = null;
+    // Chuỗi VietQR để FE render mã QR ngay trong app (quét bằng app ngân hàng).
+    let qr_code: string | null = null;
 
     if (dto.method === 'payos') {
       const providerOrderCode = generateProviderOrderCode();
@@ -74,6 +78,7 @@ export class PaymentService {
         });
 
         payment_url = paymentLink.checkoutUrl;
+        qr_code = paymentLink.qrCode ?? null;
 
         saved.transaction_id = String(providerOrderCode);
         saved.gateway_response = paymentLink as unknown as Record<string, any>;
@@ -96,6 +101,7 @@ export class PaymentService {
       currency: saved.currency,
       status: saved.status,
       payment_url,
+      qr_code,
     };
   }
 
@@ -109,6 +115,37 @@ export class PaymentService {
 
     if (payment.order.user_id !== userId) {
       throw new ForbiddenException('Bạn không có quyền xem giao dịch này');
+    }
+
+    // Webhook PayOS không gọi được vào localhost, nên khi giao dịch payos còn
+    // 'pending' ta CHỦ ĐỘNG hỏi PayOS trạng thái thật rồi đồng bộ vào DB.
+    // Nhờ vậy FE poll GET /status sẽ tự nhận 'success' mà không cần webhook.
+    if (
+      payment.method === 'payos' &&
+      payment.status === 'pending' &&
+      payment.transaction_id
+    ) {
+      try {
+        const info = await this.payos.paymentRequests.get(
+          Number(payment.transaction_id),
+        );
+        if (info.status === 'PAID') {
+          await this.paymentCore.markSuccess({
+            transactionId: payment.transaction_id,
+            gatewayResponse: info as unknown as Record<string, any>,
+          });
+          payment.status = 'success';
+          payment.paid_at = new Date();
+        } else if (['CANCELLED', 'EXPIRED', 'FAILED'].includes(info.status)) {
+          await this.paymentCore.markFailed({
+            transactionId: payment.transaction_id,
+            gatewayResponse: info as unknown as Record<string, any>,
+          });
+          payment.status = 'failed';
+        }
+      } catch {
+        // Lỗi khi hỏi PayOS -> giữ nguyên pending, lần poll sau thử lại.
+      }
     }
 
     return {

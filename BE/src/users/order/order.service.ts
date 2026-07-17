@@ -123,6 +123,8 @@ export class OrderService {
         shipping_fee: shippingFee,
         discount_amount: discountAmount,
         total,
+        // 'pending' = chờ thanh toán, để bước tạo giao dịch (POST /payments) hoạt động.
+        status: 'pending',
         note: dto.note ?? null,
       });
       const savedOrder = await orderRepo.save(order);

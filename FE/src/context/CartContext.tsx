@@ -15,6 +15,8 @@ interface CartContextValue {
   cart: Cart | null;
   itemCount: number;
   loading: boolean;
+  /** true sau khi đã thử tải giỏ ÍT NHẤT 1 lần (tránh redirect sớm khi cart còn null) */
+  initialized: boolean;
   refresh: () => Promise<void>;
   setCart: (c: Cart | null) => void;
 }
@@ -25,10 +27,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!isAuthenticated) {
       setCart(null);
+      setInitialized(true);
       return;
     }
     setLoading(true);
@@ -39,6 +43,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setCart(null);
     } finally {
       setLoading(false);
+      setInitialized(true);
     }
   }, [isAuthenticated]);
 
@@ -52,8 +57,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ cart, itemCount, loading, refresh, setCart }),
-    [cart, itemCount, loading, refresh],
+    () => ({ cart, itemCount, loading, initialized, refresh, setCart }),
+    [cart, itemCount, loading, initialized, refresh],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

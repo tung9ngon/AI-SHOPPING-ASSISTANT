@@ -8,6 +8,9 @@ import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import HomePage from './pages/home/HomePage';
 import ProductsPage from './pages/products/ProductsPage';
 import ProductDetailPage from './pages/products/ProductDetailPage';
+import CartPage from './pages/cart/CartPage';
+import CheckoutPage from './pages/checkout/CheckoutPage';
+import PayosCallbackPage from './pages/checkout/PayosCallbackPage';
 
 // Bản đồ tuyến (route map). Các màn hình sẽ lần lượt được thay thế
 // từ <Placeholder> sang trang thật qua từng bước.
@@ -20,13 +23,20 @@ export default function App() {
         <Route path="/products" element={<ProductsPage />} />
         {/* Danh mục dùng chung trang sản phẩm với filter /products?categoryId=... */}
         <Route path="/products/:id" element={<ProductDetailPage />} />
-        <Route path="/cart" element={<Placeholder name="Giỏ hàng" />} />
+        <Route
+          path="/cart"
+          element={
+            <ProtectedRoute>
+              <CartPage />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/checkout"
           element={
             <ProtectedRoute>
-              <Placeholder name="Thanh toán" />
+              <CheckoutPage />
             </ProtectedRoute>
           }
         />
@@ -54,7 +64,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/payment/payos-callback" element={<Placeholder name="Kết quả thanh toán" />} />
+        <Route path="/payment/payos-callback" element={<PayosCallbackPage />} />
       </Route>
 
       {/* ===== Auth (không dùng layout người dùng) ===== */}
