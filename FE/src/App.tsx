@@ -11,6 +11,7 @@ import ProductDetailPage from './pages/products/ProductDetailPage';
 import CartPage from './pages/cart/CartPage';
 import CheckoutPage from './pages/checkout/CheckoutPage';
 import PayosCallbackPage from './pages/checkout/PayosCallbackPage';
+import AddressBookPage from './pages/account/AddressBookPage';
 
 // Bản đồ tuyến (route map). Các màn hình sẽ lần lượt được thay thế
 // từ <Placeholder> sang trang thật qua từng bước.
@@ -61,6 +62,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Placeholder name="Theo dõi giá" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/account/addresses"
+          element={
+            <ProtectedRoute>
+              <AddressBookPage />
             </ProtectedRoute>
           }
         />

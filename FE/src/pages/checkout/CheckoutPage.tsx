@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   App,
   Button,
@@ -18,16 +18,20 @@ import {
   QrcodeOutlined,
   TagOutlined,
   CheckCircleOutlined,
+  PlusOutlined,
+  EnvironmentOutlined,
 } from '@ant-design/icons';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { Skeleton } from 'antd';
+import { Skeleton, Empty } from 'antd';
 import { orderApi } from '../../api/orders';
 import { paymentApi } from '../../api/payments';
 import { discountApi, type ValidateDiscountResult } from '../../api/discount';
+import { addressApi } from '../../api/addresses';
 import { getErrorMessage } from '../../api/client';
 import { useCart } from '../../context/CartContext';
 import { formatVND } from '../../utils/format';
-import type { PaymentMethod } from '../../types';
+import type { Address, PaymentMethod } from '../../types';
+import AddressFormModal from '../account/AddressFormModal';
 import PayosQrModal from './PayosQrModal';
 
 const { Title, Text, Paragraph } = Typography;
@@ -43,6 +47,31 @@ export default function CheckoutPage() {
 
   const [note, setNote] = useState('');
   const [method, setMethod] = useState<PaymentMethod>('cod');
+
+  // Sổ địa chỉ
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [addrLoading, setAddrLoading] = useState(true);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [addrModalOpen, setAddrModalOpen] = useState(false);
+
+  const loadAddresses = () => {
+    setAddrLoading(true);
+    addressApi
+      .list()
+      .then((res) => {
+        const list = res.data ?? [];
+        setAddresses(list);
+        // Tự chọn địa chỉ mặc định (hoặc địa chỉ đầu tiên) nếu chưa chọn.
+        setSelectedAddressId((prev) => {
+          if (prev && list.some((a) => a.id === prev)) return prev;
+          return (list.find((a) => a.is_default) ?? list[0])?.id ?? null;
+        });
+      })
+      .catch(() => setAddresses([]))
+      .finally(() => setAddrLoading(false));
+  };
+
+  useEffect(loadAddresses, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [codeInput, setCodeInput] = useState('');
   const [applying, setApplying] = useState(false);
@@ -99,10 +128,15 @@ export default function CheckoutPage() {
   };
 
   const placeOrder = async () => {
+    if (!selectedAddressId) {
+      message.error('Vui lòng chọn địa chỉ giao hàng');
+      return;
+    }
     setPlacing(true);
     try {
-      // 1) Tạo đơn (BE tự tính lại tiền + xoá giỏ)
+      // 1) Tạo đơn (BE tự tính lại tiền + xoá giỏ + snapshot địa chỉ đã chọn)
       const orderRes = await orderApi.create({
+        address_id: selectedAddressId,
         discount_code: discount?.is_valid ? discount.code : undefined,
         note: note.trim() || undefined,
       });
@@ -162,8 +196,76 @@ export default function CheckoutPage() {
       </Title>
 
       <Row gutter={[24, 24]}>
-        {/* ===== Trái: sản phẩm + phương thức ===== */}
+        {/* ===== Trái: địa chỉ + sản phẩm + phương thức ===== */}
         <Col xs={24} lg={15}>
+          <Card
+            title={
+              <>
+                <EnvironmentOutlined /> Địa chỉ giao hàng
+              </>
+            }
+            extra={
+              addresses.length > 0 && (
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<PlusOutlined />}
+                  onClick={() => setAddrModalOpen(true)}
+                >
+                  Thêm địa chỉ
+                </Button>
+              )
+            }
+            style={{ marginBottom: 16 }}
+          >
+            {addrLoading ? (
+              <Skeleton active paragraph={{ rows: 2 }} />
+            ) : addresses.length === 0 ? (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description="Bạn chưa có địa chỉ giao hàng"
+              >
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => setAddrModalOpen(true)}
+                >
+                  Thêm địa chỉ
+                </Button>
+              </Empty>
+            ) : (
+              <Radio.Group
+                value={selectedAddressId}
+                onChange={(e) => setSelectedAddressId(e.target.value)}
+                style={{ width: '100%' }}
+              >
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  {addresses.map((a) => (
+                    <Radio
+                      key={a.id}
+                      value={a.id}
+                      style={{
+                        padding: 12,
+                        border: '1px solid #eee',
+                        borderRadius: 8,
+                        width: '100%',
+                        alignItems: 'flex-start',
+                      }}
+                    >
+                      <Space size={6} wrap>
+                        <Text strong>{a.recipient_name}</Text>
+                        <Text type="secondary">|</Text>
+                        <Text>{a.recipient_phone}</Text>
+                        {a.is_default && <Tag color="orange">Mặc định</Tag>}
+                      </Space>
+                      <div style={{ color: '#666', fontSize: 13 }}>{a.address}</div>
+                    </Radio>
+                  ))}
+                </Space>
+              </Radio.Group>
+            )}
+          </Card>
+
           <Card title="Sản phẩm" styles={{ body: { padding: 0 } }}>
             {items.map((item, idx) => (
               <div key={item.id}>
@@ -321,6 +423,18 @@ export default function CheckoutPage() {
           </Card>
         </Col>
       </Row>
+
+      {/* ===== Modal thêm địa chỉ (dùng chung sổ địa chỉ) ===== */}
+      <AddressFormModal
+        open={addrModalOpen}
+        editing={null}
+        onClose={() => setAddrModalOpen(false)}
+        onSaved={(saved) => {
+          setAddrModalOpen(false);
+          setSelectedAddressId(saved.id); // tự chọn địa chỉ vừa thêm
+          loadAddresses();
+        }}
+      />
 
       {/* ===== Modal QR PayOS ===== */}
       {payos && (
