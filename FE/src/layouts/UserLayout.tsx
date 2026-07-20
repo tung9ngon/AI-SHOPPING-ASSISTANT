@@ -25,6 +25,7 @@ export default function UserLayout() {
   const userMenu: MenuProps['items'] = isAuthenticated
     ? [
         { key: 'orders', label: <Link to="/orders">Đơn hàng của tôi</Link> },
+        { key: 'addresses', label: <Link to="/account/addresses">Sổ địa chỉ</Link> },
         { key: 'alerts', label: <Link to="/price-alerts">Theo dõi giá</Link> },
         ...(isAdmin
           ? [{ key: 'admin', label: <Link to="/admin">Trang quản trị</Link> }]

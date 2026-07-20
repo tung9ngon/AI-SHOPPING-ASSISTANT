@@ -19,7 +19,8 @@
       "Bash(node run.js /tmp/playwright-test-checkout.js)",
       "Bash(curl -s -o /dev/null -w \"BE :8000 -> %{http_code}\\\\n\" http://localhost:8000/api/products)",
       "Bash(curl -s -o /dev/null -w \"FE :3000 -> %{http_code}\\\\n\" http://localhost:3000)",
-      "Bash(node run.js /tmp/playwright-test-checkout2.js)"
+      "Bash(node run.js /tmp/playwright-test-checkout2.js)",
+      "Bash(node run.js /tmp/playwright-test-address.js)"
     ]
   }
 }
