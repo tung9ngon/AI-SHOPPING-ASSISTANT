@@ -69,6 +69,16 @@ export interface ProductReview {
   user?: { id: string; full_name: string; avatar_url?: string | null };
 }
 
+// ---- Address (sổ địa chỉ - nhiều địa chỉ / 1 tài khoản) ----
+export interface Address {
+  id: string;
+  recipient_name: string;
+  recipient_phone: string;
+  address: string;
+  is_default: boolean;
+  created_at?: string;
+}
+
 // ---- Cart (khớp CHÍNH XÁC response GET /api/cart) ----
 export interface CartItemProduct {
   id: string;
