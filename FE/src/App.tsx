@@ -12,6 +12,9 @@ import CartPage from './pages/cart/CartPage';
 import CheckoutPage from './pages/checkout/CheckoutPage';
 import PayosCallbackPage from './pages/checkout/PayosCallbackPage';
 import AddressBookPage from './pages/account/AddressBookPage';
+import OrdersPage from './pages/orders/OrdersPage';
+import OrderDetailPage from './pages/orders/OrderDetailPage';
+import PriceAlertsPage from './pages/pricealerts/PriceAlertsPage';
 
 // Bản đồ tuyến (route map). Các màn hình sẽ lần lượt được thay thế
 // từ <Placeholder> sang trang thật qua từng bước.
@@ -45,7 +48,7 @@ export default function App() {
           path="/orders"
           element={
             <ProtectedRoute>
-              <Placeholder name="Đơn hàng của tôi" />
+              <OrdersPage />
             </ProtectedRoute>
           }
         />
@@ -53,7 +56,7 @@ export default function App() {
           path="/orders/:id"
           element={
             <ProtectedRoute>
-              <Placeholder name="Chi tiết đơn hàng" />
+              <OrderDetailPage />
             </ProtectedRoute>
           }
         />
@@ -61,7 +64,7 @@ export default function App() {
           path="/price-alerts"
           element={
             <ProtectedRoute>
-              <Placeholder name="Theo dõi giá" />
+              <PriceAlertsPage />
             </ProtectedRoute>
           }
         />
