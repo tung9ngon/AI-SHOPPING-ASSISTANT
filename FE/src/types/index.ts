@@ -110,13 +110,15 @@ export interface ProductReview {
 }
 
 // ---- Address (sổ địa chỉ - nhiều địa chỉ / 1 tài khoản) ----
+// Khớp BE: GET /api/users/me/addresses (address.entity.ts)
 export interface Address {
   id: string;
-  recipient_name: string;
-  recipient_phone: string;
-  address: string;
+  full_address: string;
+  recipient_name?: string | null;
+  phone_number?: string | null;
   is_default: boolean;
   created_at?: string;
+  updated_at?: string;
 }
 
 // ---- Cart (khớp CHÍNH XÁC response GET /api/cart) ----

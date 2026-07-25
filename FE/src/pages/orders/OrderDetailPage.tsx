@@ -183,13 +183,16 @@ export default function OrderDetailPage() {
             ))}
           </Card>
 
-          {(order.recipient_name || order.shipping_address) && (
+          {(order.shipping_address?.recipient_name || order.shipping_address?.full_address) && (
             <Card title="Người nhận" style={{ marginTop: 16 }}>
               <Space direction="vertical" size={2}>
                 <Text strong>
-                  {order.recipient_name} {order.recipient_phone ? `· ${order.recipient_phone}` : ''}
+                  {order.shipping_address.recipient_name}
+                  {order.shipping_address.phone_number
+                    ? ` · ${order.shipping_address.phone_number}`
+                    : ''}
                 </Text>
-                <Text type="secondary">{order.shipping_address}</Text>
+                <Text type="secondary">{order.shipping_address.full_address}</Text>
               </Space>
             </Card>
           )}

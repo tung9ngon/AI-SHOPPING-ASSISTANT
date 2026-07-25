@@ -28,14 +28,17 @@ export interface OrderDetail {
   subtotal: number | string;
   shipping_fee: number | string;
   discount_amount: number | string;
+  shipping_discount_amount?: number | string;
   total: number | string;
   status: OrderStatus;
   note: string | null;
   created_at: string;
-  // Các field người nhận sẽ có khi bạn dựng BE sổ địa chỉ (tuỳ chọn)
-  recipient_name?: string | null;
-  recipient_phone?: string | null;
-  shipping_address?: string | null;
+  // Snapshot địa chỉ giao hàng tại thời điểm đặt (BE order.service.ts)
+  shipping_address?: {
+    full_address: string | null;
+    recipient_name: string | null;
+    phone_number: string | null;
+  } | null;
 }
 
 export const orderApi = {

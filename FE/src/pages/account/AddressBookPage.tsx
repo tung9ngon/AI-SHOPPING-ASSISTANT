@@ -114,12 +114,16 @@ export default function AddressBookPage() {
                 <EnvironmentOutlined style={{ fontSize: 20, color: '#ff6a00', marginTop: 4 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <Space>
-                    <Text strong>{a.recipient_name}</Text>
-                    <Text type="secondary">|</Text>
-                    <Text>{a.recipient_phone}</Text>
+                    <Text strong>{a.recipient_name || 'Người nhận'}</Text>
+                    {a.phone_number && (
+                      <>
+                        <Text type="secondary">|</Text>
+                        <Text>{a.phone_number}</Text>
+                      </>
+                    )}
                     {a.is_default && <Tag color="orange">Mặc định</Tag>}
                   </Space>
-                  <div style={{ color: '#555', marginTop: 4 }}>{a.address}</div>
+                  <div style={{ color: '#555', marginTop: 4 }}>{a.full_address}</div>
                 </div>
                 <Space direction="vertical" align="end">
                   <Space>
