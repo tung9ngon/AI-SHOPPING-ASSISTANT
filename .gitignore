@@ -1,0 +1,6 @@
+# Claude Code local settings (chứa đường dẫn máy + có thể dính secret khi ghi permission)
+.claude/settings.json
+.claude/settings.local.json
+
+# Build artifacts
+BE/tsconfig.build.tsbuildinfo

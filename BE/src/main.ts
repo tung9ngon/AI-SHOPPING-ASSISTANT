@@ -19,6 +19,7 @@ import { OrderModule } from './users/order/order.module';
 import { AdminOrderModule } from './admin/order/order.admin.module';
 import { PaymentModule } from './users/payment/payment.module';
 import { AdminPaymentModule } from './admin/payment/payment.admin.module';
+import { ChatModule } from './users/chat/chat.module';
 
 @Module({
   imports: [
@@ -61,7 +62,8 @@ import { AdminPaymentModule } from './admin/payment/payment.admin.module';
     OrderModule,
     AdminOrderModule,
     PaymentModule,
-    AdminProductModule
+    AdminProductModule,
+    ChatModule,
 
   ],
 })

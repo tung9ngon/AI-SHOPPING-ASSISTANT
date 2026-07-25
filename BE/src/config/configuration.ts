@@ -48,4 +48,9 @@ export default () => ({
   apiKey: process.env.PAYOS_API_KEY,
   checksumKey: process.env.PAYOS_CHECKSUM_KEY,
   },
+
+  gemini: {
+    apiKey: process.env.GEMINI_API_KEY,
+    model: process.env.GEMINI_MODEL, // vd: gemini-1.5-flash, gemini-2.0-flash
+  },
 });
