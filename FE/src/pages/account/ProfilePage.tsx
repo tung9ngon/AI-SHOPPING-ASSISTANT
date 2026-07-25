@@ -17,13 +17,15 @@ import {
   Tabs,
   Tag,
   Typography,
+  Upload,
 } from 'antd';
 import {
   UserOutlined,
   SaveOutlined,
   MailOutlined,
   PhoneOutlined,
-  PictureOutlined,
+  UploadOutlined,
+  DeleteOutlined,
   CrownOutlined,
 } from '@ant-design/icons';
 import { profileApi } from '../../api/profile';
@@ -32,10 +34,44 @@ import { productApi } from '../../api/products';
 import { getErrorMessage } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import type { MeAccount, ShoppingProfile, UserPreferences } from '../../types';
+import AddressBookPage from './AddressBookPage';
 
 const { Title, Text } = Typography;
 
 const AGE_RANGES = ['<18', '18-24', '25-34', '35-44', '45-54', '55+'];
+
+const AVATAR_MAX_MB = 5; // giới hạn kích thước file gốc trước khi nén
+
+// Đọc file ảnh -> thu nhỏ về tối đa `max` px (giữ tỉ lệ) -> data URL JPEG.
+// Vì BE không có endpoint upload file (không chạm BE), ta lưu ảnh dưới dạng
+// base64 vào cột avatar_url (kiểu 'text'). Nén nhỏ để payload/localStorage gọn.
+function fileToResizedDataUrl(file: File, max = 256, quality = 0.85): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Không đọc được file ảnh'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('File ảnh không hợp lệ'));
+      img.onload = () => {
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Trình duyệt không hỗ trợ xử lý ảnh'));
+        // Nền trắng để tránh vùng trong suốt (PNG) thành đen khi xuất JPEG
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 function formatDate(iso?: string) {
   if (!iso) return '—';
@@ -58,7 +94,10 @@ function AccountInfoTab() {
   const [me, setMe] = useState<MeAccount | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState<string>('');
+  const [processing, setProcessing] = useState(false); // đang nén ảnh vừa chọn
+  // Ảnh đại diện quản lý bằng state (không còn ô nhập URL): '' = không có ảnh.
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
+  const [initialAvatar, setInitialAvatar] = useState<string>('');
 
   useEffect(() => {
     profileApi
@@ -68,34 +107,56 @@ function AccountInfoTab() {
         form.setFieldsValue({
           full_name: res.data.full_name,
           phone_number: res.data.phone_number ?? '',
-          avatar_url: res.data.avatar_url ?? '',
         });
-        setAvatarPreview(res.data.avatar_url ?? '');
+        setAvatarUrl(res.data.avatar_url ?? '');
+        setInitialAvatar(res.data.avatar_url ?? '');
       })
       .catch((err) => message.error(getErrorMessage(err)))
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const onFinish = async (values: {
-    full_name: string;
-    phone_number?: string;
-    avatar_url?: string;
-  }) => {
+  // Người dùng chọn ảnh từ máy: validate -> nén -> preview. Trả false để antd
+  // KHÔNG tự upload (không có endpoint BE); ảnh chỉ nằm ở FE tới khi bấm Lưu.
+  const beforeUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      message.error('Vui lòng chọn một tệp ảnh');
+      return Upload.LIST_IGNORE;
+    }
+    if (file.size > AVATAR_MAX_MB * 1024 * 1024) {
+      message.error(`Ảnh phải nhỏ hơn ${AVATAR_MAX_MB}MB`);
+      return Upload.LIST_IGNORE;
+    }
+    setProcessing(true);
+    try {
+      const dataUrl = await fileToResizedDataUrl(file);
+      setAvatarUrl(dataUrl);
+    } catch (err) {
+      message.error((err as Error).message || 'Không xử lý được ảnh');
+    } finally {
+      setProcessing(false);
+    }
+    return Upload.LIST_IGNORE;
+  };
+
+  const onFinish = async (values: { full_name: string; phone_number?: string }) => {
     setSaving(true);
     try {
+      const avatarChanged = avatarUrl !== initialAvatar;
       await profileApi.updateMe({
         full_name: values.full_name.trim(),
         // Chuỗi rỗng -> gửi rỗng để BE xoá; BE validate SĐT nếu có ký tự
         phone_number: values.phone_number?.trim() || undefined,
-        avatar_url: values.avatar_url?.trim() || undefined,
+        // Chỉ gửi avatar khi có thay đổi ('' để xoá ảnh hiện tại)
+        ...(avatarChanged ? { avatar_url: avatarUrl } : {}),
       });
+      setInitialAvatar(avatarUrl);
       message.success('Đã cập nhật thông tin tài khoản');
       // Đồng bộ header (avatar + tên) qua AuthContext
       if (user) {
         setUser({
           ...user,
           full_name: values.full_name.trim(),
-          avatar_url: values.avatar_url?.trim() || null,
+          avatar_url: avatarUrl || null,
         });
       }
     } catch (err) {
@@ -114,7 +175,7 @@ function AccountInfoTab() {
           <Space direction="vertical" align="center" style={{ width: '100%' }} size="middle">
             <Avatar
               size={104}
-              src={avatarPreview || undefined}
+              src={avatarUrl || undefined}
               icon={<UserOutlined />}
               style={{ backgroundColor: '#ff6a00' }}
             />
@@ -176,17 +237,42 @@ function AccountInfoTab() {
               <Input prefix={<PhoneOutlined />} placeholder="0901234567" allowClear />
             </Form.Item>
 
-            <Form.Item
-              name="avatar_url"
-              label="Ảnh đại diện (URL)"
-              rules={[{ type: 'url', message: 'URL không hợp lệ' }]}
-            >
-              <Input
-                prefix={<PictureOutlined />}
-                placeholder="https://..."
-                allowClear
-                onChange={(e) => setAvatarPreview(e.target.value.trim())}
-              />
+            <Form.Item label="Ảnh đại diện">
+              <Space align="center" size="middle">
+                <Avatar
+                  size={64}
+                  src={avatarUrl || undefined}
+                  icon={<UserOutlined />}
+                  style={{ backgroundColor: '#ff6a00', flexShrink: 0 }}
+                />
+                <Space direction="vertical" size={4}>
+                  <Space>
+                    <Upload
+                      accept="image/*"
+                      showUploadList={false}
+                      maxCount={1}
+                      beforeUpload={beforeUpload}
+                    >
+                      <Button icon={<UploadOutlined />} loading={processing}>
+                        {avatarUrl ? 'Đổi ảnh' : 'Tải ảnh lên'}
+                      </Button>
+                    </Upload>
+                    {avatarUrl && (
+                      <Button
+                        danger
+                        icon={<DeleteOutlined />}
+                        disabled={processing}
+                        onClick={() => setAvatarUrl('')}
+                      >
+                        Xoá ảnh
+                      </Button>
+                    )}
+                  </Space>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    JPG/PNG, tối đa {AVATAR_MAX_MB}MB. Ảnh sẽ được thu nhỏ tự động.
+                  </Text>
+                </Space>
+              </Space>
             </Form.Item>
 
             <Form.Item style={{ marginBottom: 0 }}>
@@ -389,6 +475,7 @@ export default function ProfilePage() {
         items={[
           { key: 'account', label: 'Thông tin tài khoản', children: <AccountInfoTab /> },
           { key: 'preferences', label: 'Sở thích mua sắm', children: <PreferencesTab /> },
+          { key: 'addresses', label: 'Sổ địa chỉ', children: <AddressBookPage /> },
         ]}
       />
     </div>

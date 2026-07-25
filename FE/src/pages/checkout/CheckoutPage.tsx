@@ -244,12 +244,16 @@ export default function CheckoutPage() {
                       }}
                     >
                       <Space size={6} wrap>
-                        <Text strong>{a.recipient_name}</Text>
-                        <Text type="secondary">|</Text>
-                        <Text>{a.recipient_phone}</Text>
+                        <Text strong>{a.recipient_name || 'Người nhận'}</Text>
+                        {a.phone_number && (
+                          <>
+                            <Text type="secondary">|</Text>
+                            <Text>{a.phone_number}</Text>
+                          </>
+                        )}
                         {a.is_default && <Tag color="orange">Mặc định</Tag>}
                       </Space>
-                      <div style={{ color: '#666', fontSize: 13 }}>{a.address}</div>
+                      <div style={{ color: '#666', fontSize: 13 }}>{a.full_address}</div>
                     </Radio>
                   ))}
                 </Space>

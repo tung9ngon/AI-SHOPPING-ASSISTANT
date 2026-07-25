@@ -25,8 +25,8 @@ export default function AddressFormModal({
       if (editing) {
         form.setFieldsValue({
           recipient_name: editing.recipient_name,
-          recipient_phone: editing.recipient_phone,
-          address: editing.address,
+          phone_number: editing.phone_number,
+          full_address: editing.full_address,
           is_default: editing.is_default,
         });
       } else {
@@ -38,8 +38,8 @@ export default function AddressFormModal({
   const submit = async () => {
     let values: {
       recipient_name: string;
-      recipient_phone: string;
-      address: string;
+      phone_number: string;
+      full_address: string;
       is_default?: boolean;
     };
     try {
@@ -51,8 +51,8 @@ export default function AddressFormModal({
     try {
       const payload = {
         recipient_name: values.recipient_name.trim(),
-        recipient_phone: values.recipient_phone.trim(),
-        address: values.address.trim(),
+        phone_number: values.phone_number.trim(),
+        full_address: values.full_address.trim(),
         is_default: values.is_default ?? false,
       };
       const res = editing
@@ -87,12 +87,13 @@ export default function AddressFormModal({
           <Input placeholder="Nguyễn Văn A" />
         </Form.Item>
         <Form.Item
-          name="recipient_phone"
+          name="phone_number"
           label="Số điện thoại"
           rules={[
             { required: true, message: 'Vui lòng nhập số điện thoại' },
             {
-              pattern: /^(0|\+84)\d{9,10}$/,
+              // BE chỉ chấp nhận 8-15 ký tự gồm số, dấu + và khoảng trắng
+              pattern: /^(0|\+84)\d{8,9}$/,
               message: 'Số điện thoại không hợp lệ (VD: 0912345678)',
             },
           ]}
@@ -100,9 +101,12 @@ export default function AddressFormModal({
           <Input placeholder="0912345678" />
         </Form.Item>
         <Form.Item
-          name="address"
+          name="full_address"
           label="Địa chỉ"
-          rules={[{ required: true, message: 'Vui lòng nhập địa chỉ' }]}
+          rules={[
+            { required: true, message: 'Vui lòng nhập địa chỉ' },
+            { max: 255, message: 'Địa chỉ tối đa 255 ký tự' },
+          ]}
         >
           <Input.TextArea
             rows={2}
