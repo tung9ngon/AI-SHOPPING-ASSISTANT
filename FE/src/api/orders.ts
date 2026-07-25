@@ -40,8 +40,12 @@ export interface OrderDetail {
 
 export const orderApi = {
   // address_id: id địa chỉ đã chọn từ sổ địa chỉ; BE snapshot thông tin vào đơn.
-  create: (data: { address_id?: string; discount_code?: string; note?: string }) =>
-    api.post<Order>('/orders', data),
+  create: (data: {
+    address_id?: string;
+    discount_code?: string; // mã giảm tiền hàng
+    freeship_code?: string; // mã miễn phí vận chuyển
+    note?: string;
+  }) => api.post<Order>('/orders', data),
   list: (params?: { status?: OrderStatus; page?: number; limit?: number }) =>
     api.get<Paginated<OrderListItem>>('/orders', { params }),
   detail: (id: string) => api.get<OrderDetail>(`/orders/${id}`),

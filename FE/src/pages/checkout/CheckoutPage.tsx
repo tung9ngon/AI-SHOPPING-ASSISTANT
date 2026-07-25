@@ -20,12 +20,13 @@ import {
   CheckCircleOutlined,
   PlusOutlined,
   EnvironmentOutlined,
+  RightOutlined,
 } from '@ant-design/icons';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Skeleton, Empty } from 'antd';
 import { orderApi } from '../../api/orders';
 import { paymentApi } from '../../api/payments';
-import { discountApi, type ValidateDiscountResult } from '../../api/discount';
+import { calcVoucherAmount, type Voucher } from '../../api/discount';
 import { addressApi } from '../../api/addresses';
 import { getErrorMessage } from '../../api/client';
 import { useCart } from '../../context/CartContext';
@@ -33,6 +34,7 @@ import { formatVND } from '../../utils/format';
 import type { Address, PaymentMethod } from '../../types';
 import AddressFormModal from '../account/AddressFormModal';
 import PayosQrModal from './PayosQrModal';
+import VoucherModal from './VoucherModal';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -73,9 +75,10 @@ export default function CheckoutPage() {
 
   useEffect(loadAddresses, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [codeInput, setCodeInput] = useState('');
-  const [applying, setApplying] = useState(false);
-  const [discount, setDiscount] = useState<ValidateDiscountResult | null>(null);
+  // Voucher chọn kiểu Shopee: 1 mã giảm tiền hàng + 1 mã miễn phí ship
+  const [voucherOpen, setVoucherOpen] = useState(false);
+  const [discountVoucher, setDiscountVoucher] = useState<Voucher | null>(null);
+  const [freeshipVoucher, setFreeshipVoucher] = useState<Voucher | null>(null);
 
   const [placing, setPlacing] = useState(false);
   const [doneOrderId, setDoneOrderId] = useState<string | null>(null);
@@ -91,10 +94,17 @@ export default function CheckoutPage() {
   const items = cart?.items ?? [];
   const subtotal = Number(cart?.subtotal ?? 0);
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
-  const discountAmount = discount?.is_valid ? discount.discount_amount : 0;
+  const discountAmount = useMemo(
+    () => (discountVoucher ? calcVoucherAmount(discountVoucher, subtotal, shipping) : 0),
+    [discountVoucher, subtotal, shipping],
+  );
+  const shippingDiscount = useMemo(
+    () => (freeshipVoucher ? calcVoucherAmount(freeshipVoucher, subtotal, shipping) : 0),
+    [freeshipVoucher, subtotal, shipping],
+  );
   const total = useMemo(
-    () => Math.max(0, subtotal + shipping - discountAmount),
-    [subtotal, shipping, discountAmount],
+    () => Math.max(0, subtotal + shipping - discountAmount - shippingDiscount),
+    [subtotal, shipping, discountAmount, shippingDiscount],
   );
 
   // Chờ giỏ tải xong (tránh redirect sớm khi cart còn null).
@@ -107,26 +117,6 @@ export default function CheckoutPage() {
     return <Navigate to="/cart" replace />;
   }
 
-  const applyDiscount = async () => {
-    const code = codeInput.trim();
-    if (!code) return;
-    setApplying(true);
-    try {
-      const res = await discountApi.validate(code, subtotal);
-      if (res.data.is_valid) {
-        setDiscount(res.data);
-        message.success(`Áp dụng mã "${res.data.code}" thành công`);
-      } else {
-        setDiscount(null);
-        message.error(res.data.message || 'Mã giảm giá không hợp lệ');
-      }
-    } catch (err) {
-      message.error(getErrorMessage(err));
-    } finally {
-      setApplying(false);
-    }
-  };
-
   const placeOrder = async () => {
     if (!selectedAddressId) {
       message.error('Vui lòng chọn địa chỉ giao hàng');
@@ -137,7 +127,8 @@ export default function CheckoutPage() {
       // 1) Tạo đơn (BE tự tính lại tiền + xoá giỏ + snapshot địa chỉ đã chọn)
       const orderRes = await orderApi.create({
         address_id: selectedAddressId,
-        discount_code: discount?.is_valid ? discount.code : undefined,
+        discount_code: discountVoucher?.code,
+        freeship_code: freeshipVoucher?.code,
         note: note.trim() || undefined,
       });
       const orderId = orderRes.data.id;
@@ -342,38 +333,33 @@ export default function CheckoutPage() {
         {/* ===== Phải: tóm tắt ===== */}
         <Col xs={24} lg={9}>
           <Card title="Tóm tắt đơn hàng">
-            {/* Mã giảm giá */}
-            <div style={{ marginBottom: 16 }}>
-              <Text>Mã giảm giá</Text>
-              <Space.Compact style={{ width: '100%', marginTop: 6 }}>
-                <Input
-                  prefix={<TagOutlined />}
-                  placeholder="Nhập mã"
-                  value={codeInput}
-                  onChange={(e) => setCodeInput(e.target.value)}
-                  onPressEnter={applyDiscount}
-                  disabled={!!discount}
-                />
-                {discount ? (
-                  <Button
-                    onClick={() => {
-                      setDiscount(null);
-                      setCodeInput('');
-                    }}
-                  >
-                    Bỏ
-                  </Button>
+            {/* Voucher (kiểu Shopee): mở popup chọn mã */}
+            <div
+              onClick={() => setVoucherOpen(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 12px',
+                border: '1px solid #eee',
+                borderRadius: 8,
+                cursor: 'pointer',
+                marginBottom: 16,
+              }}
+            >
+              <TagOutlined style={{ color: '#ff6a00', fontSize: 16 }} />
+              <Text strong>Voucher</Text>
+              <div style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
+                {discountVoucher || freeshipVoucher ? (
+                  <Space size={4} wrap style={{ justifyContent: 'flex-end' }}>
+                    {discountVoucher && <Tag color="orange">{discountVoucher.code}</Tag>}
+                    {freeshipVoucher && <Tag color="cyan">{freeshipVoucher.code}</Tag>}
+                  </Space>
                 ) : (
-                  <Button type="primary" loading={applying} onClick={applyDiscount}>
-                    Áp dụng
-                  </Button>
+                  <Text type="secondary">Chọn hoặc nhập mã</Text>
                 )}
-              </Space.Compact>
-              {discount?.is_valid && (
-                <Tag color="green" style={{ marginTop: 8 }}>
-                  Đã áp dụng {discount.code}: -{formatVND(discount.discount_amount)}
-                </Tag>
-              )}
+              </div>
+              <RightOutlined style={{ color: '#bbb', fontSize: 12 }} />
             </div>
 
             <Divider style={{ margin: '12px 0' }} />
@@ -390,6 +376,12 @@ export default function CheckoutPage() {
               <Row justify="space-between" style={{ marginBottom: 8 }}>
                 <Text>Giảm giá</Text>
                 <Text style={{ color: '#52c41a' }}>-{formatVND(discountAmount)}</Text>
+              </Row>
+            )}
+            {shippingDiscount > 0 && (
+              <Row justify="space-between" style={{ marginBottom: 8 }}>
+                <Text>Giảm phí vận chuyển</Text>
+                <Text style={{ color: '#52c41a' }}>-{formatVND(shippingDiscount)}</Text>
               </Row>
             )}
             {shipping > 0 && (
@@ -423,6 +415,21 @@ export default function CheckoutPage() {
           </Card>
         </Col>
       </Row>
+
+      {/* ===== Popup chọn voucher (kiểu Shopee) ===== */}
+      <VoucherModal
+        open={voucherOpen}
+        subtotal={subtotal}
+        shippingFee={shipping}
+        selectedDiscount={discountVoucher}
+        selectedFreeship={freeshipVoucher}
+        onClose={() => setVoucherOpen(false)}
+        onConfirm={(d, f) => {
+          setDiscountVoucher(d);
+          setFreeshipVoucher(f);
+          setVoucherOpen(false);
+        }}
+      />
 
       {/* ===== Modal thêm địa chỉ (dùng chung sổ địa chỉ) ===== */}
       <AddressFormModal

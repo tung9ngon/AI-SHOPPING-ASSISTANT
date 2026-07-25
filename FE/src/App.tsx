@@ -12,6 +12,7 @@ import CartPage from './pages/cart/CartPage';
 import CheckoutPage from './pages/checkout/CheckoutPage';
 import PayosCallbackPage from './pages/checkout/PayosCallbackPage';
 import AddressBookPage from './pages/account/AddressBookPage';
+import ProfilePage from './pages/account/ProfilePage';
 import OrdersPage from './pages/orders/OrdersPage';
 import OrderDetailPage from './pages/orders/OrderDetailPage';
 import PriceAlertsPage from './pages/pricealerts/PriceAlertsPage';
@@ -65,6 +66,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <PriceAlertsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/account/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
             </ProtectedRoute>
           }
         />

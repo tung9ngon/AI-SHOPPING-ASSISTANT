@@ -11,6 +11,46 @@ export interface AuthUser {
   avatar_url?: string | null;
 }
 
+// ---- Hồ sơ tài khoản (GET/PUT /api/users/me) ----
+export interface MeAccount {
+  id: string;
+  full_name: string;
+  email: string | null;
+  phone_number: string | null;
+  avatar_url: string | null;
+  role: UserRole;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface UpdateMePayload {
+  full_name?: string;
+  phone_number?: string;
+  avatar_url?: string;
+}
+
+// ---- Hồ sơ mua sắm (GET/PUT /api/users/me/profile) ----
+export interface ShoppingProfile {
+  user_segment: string | null;
+  occupation: string | null;
+  age_range: string | null;
+  interests: string[];
+}
+
+// ---- Sở thích/tuỳ chọn (GET/PUT /api/users/me/preferences) ----
+export interface BudgetRange {
+  min: number;
+  max: number;
+}
+
+export interface UserPreferences {
+  preferred_categories: string[];
+  budget_range: BudgetRange | null;
+  preferred_brands: string[];
+  preferred_attributes: Record<string, unknown>;
+  last_intent_summary: string | null;
+}
+
 // ---- Category ----
 export interface Category {
   id: string;
