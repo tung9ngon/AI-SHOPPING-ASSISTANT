@@ -99,13 +99,11 @@ export class UpdateProductDto {
   is_active?: boolean;
 }
 
-// POST /api/admin/products/:id/images
+// POST /api/admin/products/:id/images (multipart/form-data, kèm file field "file")
+// is_primary / sort_order là các field text đi kèm trong cùng form-data (optional)
 export class CreateProductImageDto {
-  @IsString()
-  @MaxLength(2000)
-  image_url: string;
-
   @IsOptional()
+  @Type(() => Boolean)
   @IsBoolean()
   is_primary?: boolean = false;
 
@@ -113,6 +111,20 @@ export class CreateProductImageDto {
   @Type(() => Number)
   @IsInt()
   sort_order?: number = 0;
+}
+
+// PUT /api/admin/products/:id/images/:image_id
+// Có thể gửi kèm file mới (thay ảnh) và/hoặc chỉ đổi is_primary, sort_order
+export class UpdateProductImageDto {
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  is_primary?: boolean;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  sort_order?: number;
 }
 
 // POST /api/admin/products/:id/specs

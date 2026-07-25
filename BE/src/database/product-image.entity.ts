@@ -19,10 +19,13 @@ export class ProductImage {
   @Column({ type: 'text' })
   image_url: string;
 
+  // public_id trên Cloudinary (vd: "products/<productId>/abc123") - cần để xoá/thay ảnh đúng file
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  public_id: string | null;
+
   @Column({ type: 'boolean', default: false })
   is_primary: boolean;
 
   @Column({ type: 'int', default: 0 })
   sort_order: number;
 }
-
