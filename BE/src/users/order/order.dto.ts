@@ -1,13 +1,22 @@
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, Min, MaxLength } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, IsUUID, Min, MaxLength } from 'class-validator';
 import { OrderStatus } from '../../database/order.entity';
 
 // POST /api/orders
 export class CreateOrderDto {
+  @IsUUID('4', { message: 'address_id không hợp lệ' })
+  address_id: string;
+
   @IsOptional()
   @IsString()
   @MaxLength(50)
   discount_code?: string;
+
+  // Mã giảm giá loại free_shipping, dùng song song với discount_code
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  freeship_code?: string;
 
   @IsOptional()
   @IsString()

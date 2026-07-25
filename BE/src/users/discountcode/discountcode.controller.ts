@@ -1,10 +1,22 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
 import { DiscountCodeService } from './discountcode.service';
-import { ValidateDiscountCodeDto } from './discountcode.dto';
+import { ListDiscountCodeDto, ValidateDiscountCodeDto } from './discountcode.dto';
 
 @Controller('discount-codes')
 export class DiscountCodeController {
   constructor(private readonly discountCodeService: DiscountCodeService) {}
+
+  // GET /api/discount-codes
+  @Get()
+  listDiscountCodes(@Query() query: ListDiscountCodeDto) {
+    return this.discountCodeService.listDiscountCodes(query);
+  }
+
+  // GET /api/discount-codes/freeship
+  @Get('freeship')
+  listFreeshipCodes(@Query() query: ListDiscountCodeDto) {
+    return this.discountCodeService.listFreeshipCodes(query);
+  }
 
   // POST /api/discount-codes/validate
   @Post('validate')

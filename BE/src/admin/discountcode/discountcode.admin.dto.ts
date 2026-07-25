@@ -46,8 +46,8 @@ export class CreateDiscountCodeDto {
   @MaxLength(255)
   description?: string;
 
-  @IsIn(['percent', 'fixed_amount'])
-  discount_type: 'percent' | 'fixed_amount';
+  @IsIn(['percent', 'fixed_amount', 'free_shipping'])
+  discount_type: 'percent' | 'fixed_amount' | 'free_shipping';
 
   @Type(() => Number)
   @IsNumber()
