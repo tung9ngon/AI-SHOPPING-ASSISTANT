@@ -7,10 +7,13 @@ export class RedisService implements OnModuleDestroy {
   public readonly client: Redis;
 
   constructor(private config: ConfigService) {
+    const useTls = this.config.get('redis.tls') === true;
+
     this.client = new Redis({
       host: this.config.get('redis.host'),
       port: Number(this.config.get('redis.port')),
       password: this.config.get('redis.password') || undefined,
+      ...(useTls ? { tls: {} } : {}), // Upstash bắt buộc TLS, Redis local thì không cần
     });
   }
 
