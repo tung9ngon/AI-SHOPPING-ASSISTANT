@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
 import { Order } from './order.entity';
 
-export type DiscountType = 'percent' | 'fixed_amount';
+export type DiscountType = 'percent' | 'fixed_amount' | 'free_shipping';
 
 @Entity('discount_codes')
 export class DiscountCode {
@@ -53,4 +53,3 @@ export class DiscountCode {
   @OneToMany(() => Order, (order) => order.discount_code)
   orders: Order[];
 }
-

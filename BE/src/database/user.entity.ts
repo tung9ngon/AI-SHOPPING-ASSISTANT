@@ -14,6 +14,7 @@ import { Cart } from './cart.entity';
 import { Order } from './order.entity';
 import { Notification } from './notification.entity';
 import { ProductReview } from './product-review.entity';
+import { Address } from './address.entity';
 
 export type AuthProvider = 'local' | 'google' | 'facebook';
 export type UserRole = 'user' | 'admin';
@@ -85,5 +86,8 @@ export class User {
 
   @OneToMany(() => ProductReview, (review) => review.user)
   product_reviews: ProductReview[];
+
+  @OneToMany(() => Address, (address) => address.user)
+  addresses: Address[];
 }
 

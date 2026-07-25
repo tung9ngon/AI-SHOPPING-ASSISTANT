@@ -55,30 +55,30 @@ export class AuthController {
   private setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
     res.cookie('access_token', accessToken, {
       ...COOKIE_OPTIONS,
-      maxAge: parseExpiryToMs(this.config.get<string>('jwt.accessExpiresIn'), 24 * 60 * 60 * 1000),
+      maxAge: parseExpiryToMs(this.config.get<string>('jwt.accessExpiresIn'), 60 * 1000),
     });
     res.cookie('refresh_token', refreshToken, {
       ...COOKIE_OPTIONS,
-      maxAge: parseExpiryToMs(this.config.get<string>('jwt.refreshExpiresIn'), 7 * 24 * 60 * 60 * 1000),
+      maxAge: parseExpiryToMs(this.config.get<string>('jwt.refreshExpiresIn'), 60 * 1000),
     });
   }
 
   @Post('send-otp')
-@HttpCode(200)
-sendOtp(@Body() dto: SendOtpDto) {
-  return this.authService.sendOtp(dto);
-}
+  @HttpCode(200)
+  sendOtp(@Body() dto: SendOtpDto) {
+    return this.authService.sendOtp(dto);
+  }
 
-@Post('verify-otp')
-@HttpCode(200)
-verifyOtp(@Body() dto: VerifyOtpDto) {
-  return this.authService.verifyOtp(dto);
-}
+  @Post('verify-otp')
+  @HttpCode(200)
+  verifyOtp(@Body() dto: VerifyOtpDto) {
+    return this.authService.verifyOtp(dto);
+  }
 
-@Post('register')
-register(@Body() dto: RegisterDto) {
-  return this.authService.register(dto);
-}
+  @Post('register')
+  register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
+  }
 
   @Post('forgot-password')
   @HttpCode(200)
@@ -156,12 +156,12 @@ async googleCallback(@Req() req: Request, @Res() res: Response) {
   facebookAuth() {}
 
   @UseGuards(FacebookAuthGuard)
-@Get('facebook/callback')
-async facebookCallback(@Req() req: Request, @Res() res: Response) {
-  const profile = req.user as any;
-  const user = await this.authService.validateOAuthUser(profile);
-  const { accessToken, refreshToken } = await this.authService.issueTokens(user);
-  this.setAuthCookies(res, accessToken, refreshToken);
-  return res.redirect(this.config.get<string>('frontendUrl') as string);
-}
+  @Get('facebook/callback')
+  async facebookCallback(@Req() req: Request, @Res() res: Response) {
+    const profile = req.user as any;
+    const user = await this.authService.validateOAuthUser(profile);
+    const { accessToken, refreshToken } = await this.authService.issueTokens(user);
+    this.setAuthCookies(res, accessToken, refreshToken);
+    return res.redirect(this.config.get<string>('frontendUrl') as string);
+  }
 }

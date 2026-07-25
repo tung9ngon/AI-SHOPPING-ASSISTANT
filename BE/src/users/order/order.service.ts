@@ -9,16 +9,13 @@ import { Order, OrderStatus } from '../../database/order.entity';
 import { OrderItem } from '../../database/order-item.entity';
 import { Cart } from '../../database/cart.entity';
 import { CartItem } from '../../database/cart-item.entity';
-import { DiscountCode } from '../../database/discount-code.entity';
+import { DiscountCode, DiscountType } from '../../database/discount-code.entity';
 import { ProductImage } from '../../database/product-image.entity';
+import { Address } from '../../database/address.entity';
 import { CreateOrderDto, QueryOrderDto } from './order.dto';
 
-// Giả định phí ship: 30k, miễn phí nếu đơn từ 500k trở lên.
-// Chỉnh 2 hằng số này nếu business logic thực tế khác.
 const SHIPPING_FEE = 30_000;
 const FREE_SHIPPING_THRESHOLD = 500_000;
-
-// Chỉ cho phép huỷ khi đơn chưa được xử lý (chưa paid/shipped, chưa cancelled)
 const CANCELABLE_STATUSES: OrderStatus[] = ['pending', 'simulated_success'];
 
 @Injectable()
@@ -30,9 +27,53 @@ export class OrderService {
     private readonly orderItemRepo: Repository<OrderItem>,
     @InjectRepository(ProductImage)
     private readonly imageRepo: Repository<ProductImage>,
+    @InjectRepository(Address)
+    private readonly addressRepo: Repository<Address>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
   ) {}
+
+  private async validateDiscountCode(
+    discountRepo: Repository<DiscountCode>,
+    code: string,
+    subtotal: number,
+    allowedTypes: DiscountType[],
+  ): Promise<DiscountCode> {
+    const discount = await discountRepo.findOne({ where: { code } });
+    if (!discount)
+      throw new BadRequestException(`Mã "${code}" không tồn tại`);
+
+    if (!allowedTypes.includes(discount.discount_type)) {
+      throw new BadRequestException(
+        allowedTypes.includes('free_shipping')
+          ? `Mã "${code}" không phải mã miễn phí ship, vui lòng nhập vào trường discount_code`
+          : `Mã "${code}" là mã miễn phí ship, vui lòng nhập vào trường freeship_code`,
+      );
+    }
+
+    const now = new Date();
+    if (!discount.is_active)
+      throw new BadRequestException(`Mã "${code}" đã bị vô hiệu hoá`);
+    if (discount.valid_until && now > new Date(discount.valid_until))
+      throw new BadRequestException(`Mã "${code}" đã hết hạn`);
+    if (discount.valid_from && now < new Date(discount.valid_from))
+      throw new BadRequestException(`Mã "${code}" chưa có hiệu lực`);
+    if (
+      discount.usage_limit !== null &&
+      discount.used_count >= discount.usage_limit
+    )
+      throw new BadRequestException(`Mã "${code}" đã hết lượt sử dụng`);
+    if (
+      discount.min_order_value !== null &&
+      subtotal < Number(discount.min_order_value)
+    ) {
+      throw new BadRequestException(
+        `Đơn hàng tối thiểu ${Number(discount.min_order_value).toLocaleString('vi-VN')}đ để áp dụng mã "${code}"`,
+      );
+    }
+
+    return discount;
+  }
 
   // POST /api/orders - checkout từ giỏ hàng hiện tại
   async checkout(userId: string, dto: CreateOrderDto) {
@@ -42,6 +83,15 @@ export class OrderService {
       const discountRepo = manager.getRepository(DiscountCode);
       const orderRepo = manager.getRepository(Order);
       const orderItemRepo = manager.getRepository(OrderItem);
+      const addressRepo = manager.getRepository(Address);
+
+      // ---- Validate địa chỉ giao hàng, phải thuộc về chính user này ----
+      const address = await addressRepo.findOne({
+        where: { id: dto.address_id, user_id: userId },
+      });
+      if (!address) {
+        throw new BadRequestException('Địa chỉ giao hàng không hợp lệ');
+      }
 
       const cart = await cartRepo.findOne({ where: { user_id: userId } });
       if (!cart) throw new BadRequestException('Giỏ hàng trống');
@@ -69,35 +119,34 @@ export class OrderService {
         subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
 
       let discount: DiscountCode | null = null;
+      let freeshipDiscount: DiscountCode | null = null;
       let discountAmount = 0;
+      let shippingDiscountAmount = 0;
 
       if (dto.discount_code) {
-        discount = await discountRepo.findOne({
-          where: { code: dto.discount_code },
-        });
-        if (!discount) throw new BadRequestException('Mã giảm giá không tồn tại');
+        discount = await this.validateDiscountCode(
+          discountRepo,
+          dto.discount_code,
+          subtotal,
+          ['percent', 'fixed_amount'],
+        );
+      }
 
-        const now = new Date();
-        if (!discount.is_active)
-          throw new BadRequestException('Mã giảm giá đã bị vô hiệu hoá');
-        if (discount.valid_until && now > new Date(discount.valid_until))
-          throw new BadRequestException('Mã giảm giá đã hết hạn');
-        if (discount.valid_from && now < new Date(discount.valid_from))
-          throw new BadRequestException('Mã giảm giá chưa có hiệu lực');
-        if (
-          discount.usage_limit !== null &&
-          discount.used_count >= discount.usage_limit
-        )
-          throw new BadRequestException('Mã giảm giá đã hết lượt sử dụng');
-        if (
-          discount.min_order_value !== null &&
-          subtotal < Number(discount.min_order_value)
-        ) {
+      if (dto.freeship_code) {
+        if (dto.discount_code && dto.freeship_code === dto.discount_code) {
           throw new BadRequestException(
-            `Đơn hàng tối thiểu ${Number(discount.min_order_value).toLocaleString('vi-VN')}đ để áp dụng mã này`,
+            'Không thể dùng cùng một mã cho cả discount_code và freeship_code',
           );
         }
+        freeshipDiscount = await this.validateDiscountCode(
+          discountRepo,
+          dto.freeship_code,
+          subtotal,
+          ['free_shipping'],
+        );
+      }
 
+      if (discount) {
         if (discount.discount_type === 'percent') {
           discountAmount =
             (subtotal * Number(discount.discount_value)) / 100;
@@ -113,17 +162,29 @@ export class OrderService {
         discountAmount = Math.round(Math.min(discountAmount, subtotal));
       }
 
-      const total = subtotal + shippingFee - discountAmount;
+      if (freeshipDiscount) {
+        shippingDiscountAmount = Math.round(
+          Math.min(Number(freeshipDiscount.discount_value), shippingFee),
+        );
+      }
+
+      const total =
+        subtotal + shippingFee - discountAmount - shippingDiscountAmount;
 
       const order = orderRepo.create({
         user_id: userId,
         cart_id: cart.id,
+        address_id: address.id,
+        shipping_full_address: address.full_address,
+        shipping_recipient_name: address.recipient_name ?? null,
+        shipping_phone_number: address.phone_number ?? null,
         discount_code_id: discount?.id ?? null,
+        freeship_code_id: freeshipDiscount?.id ?? null,
         subtotal,
         shipping_fee: shippingFee,
         discount_amount: discountAmount,
+        shipping_discount_amount: shippingDiscountAmount,
         total,
-        // 'pending' = chờ thanh toán, để bước tạo giao dịch (POST /payments) hoạt động.
         status: 'pending',
         note: dto.note ?? null,
       });
@@ -142,8 +203,11 @@ export class OrderService {
         discount.used_count += 1;
         await discountRepo.save(discount);
       }
+      if (freeshipDiscount) {
+        freeshipDiscount.used_count += 1;
+        await discountRepo.save(freeshipDiscount);
+      }
 
-      // Checkout xong thì clear giỏ hàng
       await cartItemRepo.delete({ cart_id: cart.id });
 
       return {
@@ -151,14 +215,20 @@ export class OrderService {
         subtotal: savedOrder.subtotal,
         shipping_fee: savedOrder.shipping_fee,
         discount_amount: savedOrder.discount_amount,
+        shipping_discount_amount: savedOrder.shipping_discount_amount,
         total: savedOrder.total,
         status: savedOrder.status,
+        shipping_address: {
+          full_address: savedOrder.shipping_full_address,
+          recipient_name: savedOrder.shipping_recipient_name,
+          phone_number: savedOrder.shipping_phone_number,
+        },
         created_at: savedOrder.created_at,
       };
     });
   }
 
-  // GET /api/orders
+  // GET /api/orders — không đổi
   async findMine(userId: string, query: QueryOrderDto) {
     const { status, page = 1, limit = 20 } = query;
 
@@ -201,7 +271,7 @@ export class OrderService {
     };
   }
 
-  // GET /api/orders/:id
+  // GET /api/orders/:id — thêm shipping_address vào response
   async findOneMine(userId: string, id: string) {
     const order = await this.orderRepo.findOne({
       where: { id, user_id: userId },
@@ -233,14 +303,20 @@ export class OrderService {
       subtotal: order.subtotal,
       shipping_fee: order.shipping_fee,
       discount_amount: order.discount_amount,
+      shipping_discount_amount: order.shipping_discount_amount,
       total: order.total,
       status: order.status,
       note: order.note,
+      shipping_address: {
+        full_address: order.shipping_full_address,
+        recipient_name: order.shipping_recipient_name,
+        phone_number: order.shipping_phone_number,
+      },
       created_at: order.created_at,
     };
   }
 
-  // PUT /api/orders/:id/cancel
+  // PUT /api/orders/:id/cancel — không đổi
   async cancel(userId: string, id: string) {
     const order = await this.orderRepo.findOne({
       where: { id, user_id: userId },

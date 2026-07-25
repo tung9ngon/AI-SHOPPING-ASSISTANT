@@ -93,6 +93,60 @@ export class JwtAccessGuard extends AuthGuard('jwt-access') {
 @Injectable()
 export class JwtRefreshGuard extends AuthGuard('jwt-refresh') {}
 
+// Dùng cho route cho phép cả guest lẫn user đăng nhập (vd /conversations).
+// Có token hợp lệ -> gắn request.user. Token thiếu/sai/hết hạn (kể cả refresh
+// cũng fail) -> KHÔNG chặn request, coi như guest (request.user = null).
+// Controller/service tự quyết định logic khác nhau giữa guest và user.
+@Injectable()
+export class OptionalJwtAccessGuard extends AuthGuard('jwt-access') {
+  constructor(
+    private readonly authService: AuthService,
+    private readonly jwtService: JwtService,
+    private readonly config: ConfigService,
+  ) {
+    super();
+  }
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest<Request>();
+    const response = context.switchToHttp().getResponse<Response>();
+
+    try {
+      return (await super.canActivate(context)) as boolean;
+    } catch {
+      const refreshToken = request.cookies?.refresh_token;
+      if (!refreshToken) {
+        request.user = undefined;
+        return true; // guest
+      }
+
+      try {
+        const payload = this.jwtService.verify<{ sub: string }>(refreshToken, {
+          secret: this.config.get<string>('jwt.refreshSecret') as string,
+        });
+
+        const { accessToken, refreshToken: newRefreshToken } =
+          await this.authService.refreshTokens(payload.sub, refreshToken);
+
+        response.cookie('access_token', accessToken, {
+          ...COOKIE_OPTIONS,
+          maxAge: parseExpiryToMs(this.config.get<string>('jwt.accessExpiresIn'), 15 * 60 * 1000),
+        });
+        response.cookie('refresh_token', newRefreshToken, {
+          ...COOKIE_OPTIONS,
+          maxAge: parseExpiryToMs(this.config.get<string>('jwt.refreshExpiresIn'), 7 * 24 * 60 * 60 * 1000),
+        });
+
+        request.user = this.jwtService.decode(accessToken);
+      } catch {
+        // refresh cũng fail -> vẫn không chặn, coi như guest
+        request.user = undefined;
+      }
+      return true;
+    }
+  }
+}
+
 @Injectable()
 export class GoogleAuthGuard extends AuthGuard('google') {}
 
