@@ -78,7 +78,6 @@ export class CreateDiscountCodeDto {
 }
 
 // PUT /api/admin/discount-codes/:id
-// Chỉ cho phép sửa các trường vận hành, không cho đổi code/discount_type gốc
 export class UpdateDiscountCodeDto {
   @IsOptional()
   @Type(() => Number)

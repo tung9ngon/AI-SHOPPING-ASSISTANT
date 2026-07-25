@@ -1,5 +1,5 @@
 import {
-  ConflictException,
+  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,6 +9,7 @@ import { Product } from '../../database/product.entity';
 import { ProductImage } from '../../database/product-image.entity';
 import { ProductSpec } from '../../database/product-spec.entity';
 import { Tag } from '../../database/tag.entity';
+import { CloudinaryService } from '../../cloudinary/Cloudinary.service';
 import {
   CreateProductDto,
   CreateProductImageDto,
@@ -16,6 +17,7 @@ import {
   CreateProductTagDto,
   QueryAdminProductDto,
   UpdateProductDto,
+  UpdateProductImageDto,
   UpdateProductSpecDto,
 } from './product.admin.dto';
 
@@ -30,6 +32,7 @@ export class AdminProductService {
     private readonly specRepo: Repository<ProductSpec>,
     @InjectRepository(Tag)
     private readonly tagRepo: Repository<Tag>,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   private async findProductOrFail(id: string): Promise<Product> {
@@ -158,9 +161,22 @@ export class AdminProductService {
     return { message: 'Đã ẩn sản phẩm' };
   }
 
-  // POST /api/admin/products/:id/images
-  async addImage(productId: string, dto: CreateProductImageDto) {
+  // ---------------- Ảnh sản phẩm ----------------
+
+  // POST /api/admin/products/:id/images  (multipart/form-data, field "file")
+  // Thêm 1 ảnh mới: upload lên Cloudinary rồi lưu image_url + public_id vào DB
+  async addImage(
+    productId: string,
+    file: Express.Multer.File,
+    dto: CreateProductImageDto,
+  ) {
+    if (!file) throw new BadRequestException('Vui lòng chọn file ảnh');
     await this.findProductOrFail(productId);
+
+    const uploadResult = await this.cloudinaryService.uploadImage(
+      file,
+      `products/${productId}`,
+    );
 
     // Nếu set ảnh mới làm primary, bỏ cờ primary ở các ảnh cũ
     if (dto.is_primary) {
@@ -172,10 +188,59 @@ export class AdminProductService {
 
     const image = this.imageRepo.create({
       product_id: productId,
-      image_url: dto.image_url,
+      image_url: uploadResult.secure_url,
+      public_id: uploadResult.public_id,
       is_primary: dto.is_primary ?? false,
       sort_order: dto.sort_order ?? 0,
     });
+    const saved = await this.imageRepo.save(image);
+
+    return {
+      id: saved.id,
+      image_url: saved.image_url,
+      is_primary: saved.is_primary,
+      sort_order: saved.sort_order,
+    };
+  }
+
+  // PUT /api/admin/products/:id/images/:image_id  (multipart/form-data, field "file" - optional)
+  // Cho phép: thay ảnh mới (nếu có file) và/hoặc chỉ đổi is_primary, sort_order
+  async updateImage(
+    productId: string,
+    imageId: string,
+    file: Express.Multer.File | undefined,
+    dto: UpdateProductImageDto,
+  ) {
+    const image = await this.imageRepo.findOne({
+      where: { id: imageId, product_id: productId },
+    });
+    if (!image) throw new NotFoundException('Không tìm thấy ảnh sản phẩm');
+
+    if (file) {
+      const uploadResult = await this.cloudinaryService.uploadImage(
+        file,
+        `products/${productId}`,
+      );
+      // Upload thành công mới xoá ảnh cũ, tránh mất ảnh nếu upload lỗi giữa chừng
+      await this.cloudinaryService.deleteImage(image.public_id);
+      image.image_url = uploadResult.secure_url;
+      image.public_id = uploadResult.public_id;
+    }
+
+    if (dto.is_primary !== undefined) {
+      if (dto.is_primary) {
+        await this.imageRepo.update(
+          { product_id: productId },
+          { is_primary: false },
+        );
+      }
+      image.is_primary = dto.is_primary;
+    }
+
+    if (dto.sort_order !== undefined) {
+      image.sort_order = dto.sort_order;
+    }
+
     const saved = await this.imageRepo.save(image);
 
     return {
@@ -193,9 +258,26 @@ export class AdminProductService {
     });
     if (!image) throw new NotFoundException('Không tìm thấy ảnh sản phẩm');
 
+    await this.cloudinaryService.deleteImage(image.public_id);
     await this.imageRepo.remove(image);
+
+    // Nếu vừa xoá ảnh chính, tự động gán ảnh chính mới (ảnh còn lại có sort_order nhỏ nhất)
+    if (image.is_primary) {
+      const [next] = await this.imageRepo.find({
+        where: { product_id: productId },
+        order: { sort_order: 'ASC' },
+        take: 1,
+      });
+      if (next) {
+        next.is_primary = true;
+        await this.imageRepo.save(next);
+      }
+    }
+
     return { message: 'Đã xoá ảnh sản phẩm' };
   }
+
+  // ---------------- Thông số kỹ thuật (specs) ----------------
 
   // POST /api/admin/products/:id/specs
   async addSpec(productId: string, dto: CreateProductSpecDto) {
@@ -252,6 +334,8 @@ export class AdminProductService {
     await this.specRepo.remove(spec);
     return { message: 'Đã xoá thông số kỹ thuật' };
   }
+
+  // ---------------- Tags ----------------
 
   // POST /api/admin/products/:id/tags
   async addTag(productId: string, dto: CreateProductTagDto) {

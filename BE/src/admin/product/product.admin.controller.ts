@@ -2,13 +2,19 @@ import {
   Body,
   Controller,
   Delete,
+  FileTypeValidator,
   Get,
+  MaxFileSizeValidator,
   Param,
+  ParseFilePipe,
   Post,
   Put,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AdminProductService } from './product.admin.service';
 import {
   CreateProductDto,
@@ -17,10 +23,14 @@ import {
   CreateProductTagDto,
   QueryAdminProductDto,
   UpdateProductDto,
+  UpdateProductImageDto,
   UpdateProductSpecDto,
 } from './product.admin.dto';
 import { JwtAccessGuard, RolesGuard } from '../../users/auth/auth.guard';
 import { Roles } from '../../users/auth/auth.decorator';
+
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+
 @Controller('admin/products')
 @UseGuards(JwtAccessGuard, RolesGuard)
 @Roles('admin')
@@ -47,9 +57,46 @@ export class AdminProductController {
     return this.adminProductService.remove(id);
   }
 
+  // POST /api/admin/products/:id/images
+  // form-data: file (bắt buộc), is_primary (optional), sort_order (optional)
   @Post(':id/images')
-  addImage(@Param('id') id: string, @Body() dto: CreateProductImageDto) {
-    return this.adminProductService.addImage(id, dto);
+  @UseInterceptors(FileInterceptor('file'))
+  addImage(
+    @Param('id') id: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: MAX_IMAGE_SIZE }),
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp|gif)$/ }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+    @Body() dto: CreateProductImageDto,
+  ) {
+    return this.adminProductService.addImage(id, file, dto);
+  }
+
+  // PUT /api/admin/products/:id/images/:image_id
+  // form-data: file (optional - có thì thay ảnh), is_primary (optional), sort_order (optional)
+  @Put(':id/images/:image_id')
+  @UseInterceptors(FileInterceptor('file'))
+  updateImage(
+    @Param('id') id: string,
+    @Param('image_id') imageId: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        fileIsRequired: false,
+        validators: [
+          new MaxFileSizeValidator({ maxSize: MAX_IMAGE_SIZE }),
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp|gif)$/ }),
+        ],
+      }),
+    )
+    file: Express.Multer.File | undefined,
+    @Body() dto: UpdateProductImageDto,
+  ) {
+    return this.adminProductService.updateImage(id, imageId, file, dto);
   }
 
   @Delete(':id/images/:image_id')
