@@ -104,13 +104,14 @@ export const adminDiscountApi = {
   list: (params?: {
     search?: string;
     isActive?: boolean;
+    status?: 'running' | 'paused';
     page?: number;
     limit?: number;
   }) => api.get<Paginated<DiscountCode>>('/admin/discount-codes', { params }),
   create: (data: {
     code: string;
     description?: string;
-    discount_type: 'percent' | 'fixed_amount';
+    discount_type: 'percent' | 'fixed_amount' | 'free_shipping';
     discount_value: number;
     min_order_value?: number;
     max_discount?: number;
@@ -142,4 +143,26 @@ export const adminPaymentApi = {
   detail: (id: string) => api.get<Payment>(`/admin/payments/${id}`),
   confirmCod: (id: string) =>
     api.post<Payment>(`/admin/payments/${id}/confirm-cod`, {}),
+};
+
+// ===== Admin: Statistics =====
+export interface AdminOverviewStats {
+  total_orders: number;
+  total_revenue: number;
+  total_products: number;
+  active_products: number;
+  total_users: number;
+  orders_by_status: { status: OrderStatus; count: number }[];
+}
+
+export interface AdminRevenueStats {
+  group_by: 'month' | 'week';
+  items: { period: string; revenue: number; order_count: number }[];
+}
+
+export const adminStatisticsApi = {
+  overview: (params?: { from?: string; to?: string }) =>
+    api.get<AdminOverviewStats>('/admin/statistics/overview', { params }),
+  revenue: (params?: { groupBy?: 'month' | 'week'; from?: string; to?: string }) =>
+    api.get<AdminRevenueStats>('/admin/statistics/revenue', { params }),
 };

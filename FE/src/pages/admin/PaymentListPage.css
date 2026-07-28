@@ -1,0 +1,97 @@
+.admin-payment-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-payment-note {
+  padding: 10px 14px;
+  border: 1px solid #ffe7ba;
+  border-radius: 8px;
+  background: #fff7e6;
+  color: #ad6800;
+  font-size: 13px;
+}
+
+.admin-payment-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-payment-filter {
+  width: 170px;
+}
+
+.admin-payment-table {
+  overflow: hidden;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.admin-payment-table .ant-table {
+  background: #ffffff;
+}
+
+.admin-payment-table .ant-table-thead > tr > th {
+  height: 38px;
+  border-bottom: 1px solid #f1f1f1;
+  background: #fafafa;
+  color: #8b8f96;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.admin-payment-table .ant-table-tbody > tr > td {
+  height: 42px;
+  border-bottom: 1px solid #f2f2f2;
+  color: #24272d;
+}
+
+.admin-payment-table .ant-table-tbody > tr:last-child > td {
+  border-bottom: 0;
+}
+
+.admin-payment-table .ant-table-cell::before {
+  display: none;
+}
+
+.admin-payment-money {
+  color: #ff1f2d;
+  font-weight: 800;
+}
+
+.admin-payment-date {
+  color: #8b8f96;
+}
+
+.admin-payment-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.admin-payment-actions .ant-btn {
+  height: auto;
+  padding: 0 4px;
+}
+
+.admin-payment-confirm {
+  color: #40b51f;
+}
+
+.admin-payment-confirm:hover {
+  color: #2d9a16 !important;
+}
+
+@media (max-width: 720px) {
+  .admin-payment-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-payment-filter {
+    width: 100%;
+  }
+}

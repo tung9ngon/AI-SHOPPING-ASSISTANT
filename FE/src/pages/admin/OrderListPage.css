@@ -1,0 +1,89 @@
+.admin-order-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-order-note {
+  padding: 10px 14px;
+  border: 1px solid #ffe7ba;
+  border-radius: 8px;
+  background: #fff7e6;
+  color: #ad6800;
+  font-size: 13px;
+}
+
+.admin-order-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-order-search {
+  width: 280px;
+}
+
+.admin-order-status {
+  width: 150px;
+}
+
+.admin-order-table {
+  overflow: hidden;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.admin-order-table .ant-table {
+  background: #ffffff;
+}
+
+.admin-order-table .ant-table-thead > tr > th {
+  height: 38px;
+  border-bottom: 1px solid #f1f1f1;
+  background: #fafafa;
+  color: #8b8f96;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.admin-order-table .ant-table-tbody > tr > td {
+  height: 60px;
+  border-bottom: 1px solid #f2f2f2;
+  color: #24272d;
+}
+
+.admin-order-table .ant-table-tbody > tr:last-child > td {
+  border-bottom: 0;
+}
+
+.admin-order-table .ant-table-cell::before {
+  display: none;
+}
+
+.admin-order-name {
+  font-weight: 500;
+}
+
+.admin-order-email,
+.admin-order-date {
+  color: #8b8f96;
+  font-size: 13px;
+}
+
+.admin-order-money {
+  color: #ff1f2d;
+  font-weight: 800;
+}
+
+@media (max-width: 720px) {
+  .admin-order-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-order-search,
+  .admin-order-status {
+    width: 100%;
+  }
+}

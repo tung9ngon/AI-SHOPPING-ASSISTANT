@@ -167,7 +167,7 @@ export interface Order {
 }
 
 // ---- Discount code ----
-export type DiscountType = 'percent' | 'fixed_amount';
+export type DiscountType = 'percent' | 'fixed_amount' | 'free_shipping';
 export interface DiscountCode {
   id: string;
   code: string;
@@ -181,6 +181,7 @@ export interface DiscountCode {
   valid_from: string | null;
   valid_until: string | null;
   is_active: boolean;
+  status?: 'running' | 'paused';
 }
 
 // ---- Price alert ----

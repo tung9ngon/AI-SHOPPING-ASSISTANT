@@ -1,0 +1,146 @@
+.admin-product-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-product-note {
+  padding: 10px 14px;
+  border: 1px solid #ffe7ba;
+  border-radius: 8px;
+  background: #fff7e6;
+  color: #ad6800;
+  font-size: 13px;
+}
+
+.admin-product-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-product-filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.admin-product-search {
+  width: 260px;
+}
+
+.admin-product-select {
+  width: 178px;
+}
+
+.admin-product-table {
+  overflow: hidden;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.admin-product-table .ant-table {
+  background: #ffffff;
+}
+
+.admin-product-table .ant-table-thead > tr > th {
+  height: 38px;
+  border-bottom: 1px solid #f1f1f1;
+  background: #fafafa;
+  color: #8b8f96;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.admin-product-table .ant-table-tbody > tr > td {
+  height: 61px;
+  border-bottom: 1px solid #f2f2f2;
+  color: #24272d;
+}
+
+.admin-product-table .ant-table-tbody > tr:last-child > td {
+  border-bottom: 0;
+}
+
+.admin-product-table .ant-table-cell::before {
+  display: none;
+}
+
+.admin-product-thumb-img,
+.admin-product-thumb-fallback {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.admin-product-thumb-img {
+  object-fit: cover;
+  background: #f0f2f5;
+}
+
+.admin-product-thumb-fallback {
+  color: #0c1020;
+  font-size: 9px;
+  font-weight: 800;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+.admin-product-name {
+  font-weight: 500;
+}
+
+.admin-product-category {
+  color: #8b8f96;
+}
+
+.admin-product-price {
+  color: #ff1f2d;
+  font-weight: 800;
+}
+
+.admin-product-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.admin-product-rating .anticon {
+  color: #15191f;
+  font-size: 12px;
+}
+
+.admin-product-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.admin-product-actions .ant-btn {
+  height: auto;
+  padding: 0 4px;
+}
+
+.admin-product-form {
+  padding-top: 8px;
+}
+
+@media (max-width: 980px) {
+  .admin-product-toolbar,
+  .admin-product-filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-product-search,
+  .admin-product-select,
+  .admin-product-toolbar .ant-btn {
+    width: 100%;
+  }
+}
