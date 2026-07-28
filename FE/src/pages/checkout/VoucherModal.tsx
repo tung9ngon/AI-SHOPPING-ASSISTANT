@@ -175,6 +175,8 @@ export default function VoucherModal({
   // Nạp danh sách + đồng bộ lựa chọn hiện tại mỗi khi mở modal.
   useEffect(() => {
     if (!open) return;
+    // Cờ ignore: bỏ qua kết quả trả về muộn nếu modal bị đóng/mở lại nhanh.
+    let ignore = false;
     setDraftDiscount(selectedDiscount);
     setDraftFreeship(selectedFreeship);
     setCodeInput('');
@@ -187,11 +189,19 @@ export default function VoucherModal({
       discountApi.listFreeship({ limit: 50 }),
     ])
       .then(([dRes, fRes]) => {
+        if (ignore) return;
         setDiscounts(dRes.data.items ?? []);
         setFreeships(fRes.data.items ?? []);
       })
-      .catch((err) => message.error(getErrorMessage(err)))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (!ignore) message.error(getErrorMessage(err));
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Gộp mã nhập tay (nếu chưa có trong danh sách) để nó vẫn hiển thị được.

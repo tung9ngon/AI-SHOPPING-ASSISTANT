@@ -25,8 +25,8 @@ export default function AddressFormModal({
     if (open) {
       if (editing) {
         form.setFieldsValue({
-          recipient_name: editing.recipient_name,
-          phone_number: editing.phone_number,
+          recipient_name: editing.recipient_name ?? '',
+          phone_number: editing.phone_number ?? '',
           full_address: editing.full_address,
           is_default: editing.is_default,
         });

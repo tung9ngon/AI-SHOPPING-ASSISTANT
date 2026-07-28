@@ -34,6 +34,9 @@ export default function CartPage() {
 
   // id của cart_item đang được cập nhật/xoá -> khoá control dòng đó.
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Giá trị số lượng đang gõ dở (chưa gửi API) cho từng dòng — chỉ commit khi
+  // rời khỏi ô (onBlur), tránh bắn PUT ở từng ký tự khi gõ số nhiều chữ số.
+  const [qtyDraft, setQtyDraft] = useState<Record<string, number>>({});
 
   const changeQty = async (itemId: string, quantity: number) => {
     setBusyId(itemId);
@@ -44,7 +47,23 @@ export default function CartPage() {
       message.error(getErrorMessage(err));
     } finally {
       setBusyId(null);
+      setQtyDraft((d) => {
+        const next = { ...d };
+        delete next[itemId];
+        return next;
+      });
     }
+  };
+
+  const commitQty = (itemId: string, currentQuantity: number) => {
+    const draft = qtyDraft[itemId];
+    if (draft != null && draft !== currentQuantity) changeQty(itemId, draft);
+    else
+      setQtyDraft((d) => {
+        const next = { ...d };
+        delete next[itemId];
+        return next;
+      });
   };
 
   const removeItem = async (itemId: string) => {
@@ -164,16 +183,17 @@ export default function CartPage() {
                       <div style={{ color: '#888', marginTop: 4 }}>{formatVND(price)}</div>
                     </div>
 
-                    {/* Số lượng */}
+                    {/* Số lượng: gõ tự do, chỉ gửi API khi rời ô (blur) hoặc Enter */}
                     <InputNumber
                       min={1}
                       precision={0}
-                      value={item.quantity}
+                      value={qtyDraft[item.id] ?? item.quantity}
                       disabled={busy}
-                      onChange={(v) => {
-                        const q = Math.max(1, Math.floor(v ?? 1));
-                        if (q !== item.quantity) changeQty(item.id, q);
-                      }}
+                      onChange={(v) =>
+                        setQtyDraft((d) => ({ ...d, [item.id]: Math.max(1, Math.floor(v ?? 1)) }))
+                      }
+                      onBlur={() => commitQty(item.id, item.quantity)}
+                      onPressEnter={() => commitQty(item.id, item.quantity)}
                       style={{ width: 90 }}
                     />
 

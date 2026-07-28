@@ -88,8 +88,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Đồng bộ giữa các tab (đăng nhập/đăng xuất ở tab khác).
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) {
-        setUserState(e.newValue ? JSON.parse(e.newValue) : null);
+      if (e.key !== STORAGE_KEY) return;
+      try {
+        setUserState(e.newValue ? (JSON.parse(e.newValue) as AuthUser) : null);
+      } catch {
+        setUserState(null);
       }
     };
     window.addEventListener('storage', onStorage);

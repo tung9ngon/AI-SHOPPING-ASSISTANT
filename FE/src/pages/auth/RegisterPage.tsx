@@ -1,12 +1,14 @@
 import { Form, Input, Button, App, Steps } from 'antd';
 import { MailOutlined, LockOutlined, UserOutlined, SafetyOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AuthLayout from './AuthLayout';
 import OAuthButtons from './OAuthButtons';
 import { emailRules, passwordRules } from './passwordRule';
 import { authApi } from '../../api/auth';
 import { getErrorMessage } from '../../api/client';
+
+const OTP_COOLDOWN_SEC = 60; // chặn gửi OTP dồn dập; khớp thời hạn OTP 5 phút ở BE
 
 export default function RegisterPage() {
   const { message } = App.useApp();
@@ -14,15 +16,40 @@ export default function RegisterPage() {
   const [step, setStep] = useState(0); // 0: email, 1: OTP, 2: đặt mật khẩu
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const cooldownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (cooldownTimer.current) clearInterval(cooldownTimer.current);
+    },
+    [],
+  );
+
+  const startCooldown = () => {
+    setCooldown(OTP_COOLDOWN_SEC);
+    if (cooldownTimer.current) clearInterval(cooldownTimer.current);
+    cooldownTimer.current = setInterval(() => {
+      setCooldown((c) => {
+        if (c <= 1) {
+          if (cooldownTimer.current) clearInterval(cooldownTimer.current);
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+  };
 
   // Bước 1: gửi OTP về email
   const sendOtp = async (values: { email: string }) => {
+    if (cooldown > 0) return;
     setLoading(true);
     try {
       await authApi.sendOtp(values.email);
       setEmail(values.email);
       message.success('Đã gửi OTP tới email của bạn');
       setStep(1);
+      startCooldown();
     } catch (err) {
       message.error(getErrorMessage(err));
     } finally {
@@ -72,8 +99,15 @@ export default function RegisterPage() {
           <Form.Item name="email" label="Email" rules={emailRules}>
             <Input prefix={<MailOutlined />} placeholder="email@example.com" size="large" />
           </Form.Item>
-          <Button type="primary" htmlType="submit" block size="large" loading={loading}>
-            Gửi mã OTP
+          <Button
+            type="primary"
+            htmlType="submit"
+            block
+            size="large"
+            loading={loading}
+            disabled={cooldown > 0}
+          >
+            {cooldown > 0 ? `Gửi lại sau ${cooldown}s` : 'Gửi mã OTP'}
           </Button>
           <OAuthButtons />
         </Form>

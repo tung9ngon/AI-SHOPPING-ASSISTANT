@@ -47,27 +47,37 @@ export default function ReviewsSection({
   const [form] = Form.useForm<{ rating: number; title?: string; content?: string }>();
 
   const load = useCallback(
-    (p: number) => {
+    (p: number, onIgnored?: () => boolean) => {
       setLoading(true);
       productApi
         .reviews(productId, { page: p, limit: PAGE_SIZE })
         .then((res) => {
+          if (onIgnored?.()) return;
           setItems(res.data.items ?? []);
           setTotal(res.data.total ?? 0);
         })
         .catch((err) => {
+          if (onIgnored?.()) return;
           setItems([]);
           setTotal(0);
           message.error(getErrorMessage(err));
         })
-        .finally(() => setLoading(false));
+        .finally(() => {
+          if (!onIgnored?.()) setLoading(false);
+        });
     },
     [productId, message],
   );
 
   useEffect(() => {
+    // Cờ ignore: nếu productId đổi (chuyển trang sản phẩm nhanh) trước khi
+    // request cũ trả về, bỏ qua kết quả cũ để không hiện nhầm đánh giá của SP trước.
+    let ignore = false;
     setPage(1);
-    load(1);
+    load(1, () => ignore);
+    return () => {
+      ignore = true;
+    };
   }, [load]);
 
   const openForm = () => {

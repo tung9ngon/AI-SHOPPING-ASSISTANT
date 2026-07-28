@@ -68,6 +68,7 @@ export default function HomePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let ignore = false;
     Promise.all([
       categoryApi.list(),
       productApi.list({ sort: 'newest', limit: 10 }),
@@ -75,12 +76,21 @@ export default function HomePage() {
       productApi.brands(),
     ])
       .then(([catRes, newRes, dealRes, brandRes]) => {
+        if (ignore) return;
         setCategories(catRes.data);
         setNewest(getItems(newRes.data));
         setDeals(getItems(dealRes.data));
         setBrands(brandRes.data);
       })
-      .finally(() => setLoading(false));
+      .catch(() => {
+        // Lỗi mạng/server: giữ các mảng rỗng, các khu vực sẽ tự ẩn/hiện "Chưa có dữ liệu".
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   return (

@@ -250,7 +250,18 @@ export default function ProductDetailPage() {
                         key={img.id}
                         src={img.image_url}
                         alt=""
+                        loading="lazy"
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Xem ảnh ${i + 1}`}
+                        aria-current={i === activeImg}
                         onClick={() => setActiveImg(i)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setActiveImg(i);
+                          }
+                        }}
                         style={{
                           width: 64,
                           height: 64,
@@ -440,13 +451,13 @@ export default function ProductDetailPage() {
               style={{ width: '100%', marginTop: 6 }}
               min={0}
               value={alertPrice}
-              onChange={setAlertPrice}
+              onChange={(v) => setAlertPrice(v == null || Number.isNaN(v) ? null : v)}
               formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
               // Ô trống phải ra null (không phải 0) để nút OK tự khoá,
               // tránh tạo nhầm cảnh báo 0₫ khi user xoá trắng ô giá.
               parser={(v) => {
                 const raw = (v ?? '').replace(/,/g, '').trim();
-                return raw === '' ? ('' as unknown as number) : Number(raw);
+                return raw === '' ? NaN : Number(raw);
               }}
             />
             {alertPrice != null && alertPrice >= Number(product.price) && (

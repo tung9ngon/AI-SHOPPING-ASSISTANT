@@ -1,6 +1,7 @@
 // Định dạng tiền VND
 export function formatVND(value: number | string | null | undefined): string {
   const n = Number(value ?? 0);
+  if (Number.isNaN(n)) return '—₫';
   return n.toLocaleString('vi-VN') + '₫';
 }
 

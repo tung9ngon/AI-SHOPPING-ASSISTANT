@@ -123,6 +123,9 @@ export default function CheckoutPage() {
       return;
     }
     setPlacing(true);
+    // Theo dõi xem đơn đã tạo thành công chưa, để nếu bước sau (thanh toán/refresh)
+    // lỗi thì không cho bấm đặt lại (tránh tạo đơn trùng) mà điều hướng sang đơn đã tạo.
+    let createdOrderId: string | null = null;
     try {
       // 1) Tạo đơn (BE tự tính lại tiền + xoá giỏ + snapshot địa chỉ đã chọn)
       const orderRes = await orderApi.create({
@@ -131,10 +134,10 @@ export default function CheckoutPage() {
         freeship_code: freeshipVoucher?.code,
         note: note.trim() || undefined,
       });
-      const orderId = orderRes.data.id;
+      createdOrderId = orderRes.data.id;
 
       // 2) Tạo giao dịch thanh toán
-      const payRes = await paymentApi.create(orderId, method);
+      const payRes = await paymentApi.create(createdOrderId, method);
       await refresh(); // giỏ đã bị BE xoá
 
       if (method === 'payos') {
@@ -147,10 +150,19 @@ export default function CheckoutPage() {
         });
       } else {
         // COD: đơn đã đặt, chờ giao & thu tiền
-        setDoneOrderId(orderId);
+        setDoneOrderId(createdOrderId);
       }
     } catch (err) {
-      message.error(getErrorMessage(err));
+      if (createdOrderId) {
+        // Đơn đã được tạo, chỉ bước thanh toán/refresh sau đó lỗi — không để user
+        // bấm "Đặt hàng" lại (sẽ tạo đơn thứ 2), điều hướng sang đơn đã tạo.
+        message.error(
+          'Đơn hàng đã được tạo nhưng xử lý thanh toán gặp lỗi. Vui lòng kiểm tra và thanh toán lại trong chi tiết đơn hàng.',
+        );
+        navigate(`/orders/${createdOrderId}`);
+      } else {
+        message.error(getErrorMessage(err));
+      }
     } finally {
       setPlacing(false);
     }

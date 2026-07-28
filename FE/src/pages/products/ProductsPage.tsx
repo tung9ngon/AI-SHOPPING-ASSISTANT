@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  App,
   Button,
   Card,
   Col,
@@ -16,6 +17,7 @@ import { ClearOutlined, FilterOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
 import { categoryApi } from '../../api/categories';
 import { productApi, type ProductListItem, type ProductQuery } from '../../api/products';
+import { getErrorMessage } from '../../api/client';
 import type { Category } from '../../types';
 import ProductCard from '../../components/ProductCard';
 
@@ -31,6 +33,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function ProductsPage() {
+  const { message } = App.useApp();
   // URL là "nguồn sự thật" của bộ lọc -> share link giữ nguyên bộ lọc,
   // và ô tìm kiếm trên header (điều hướng /products?search=...) hoạt động ngay.
   const [searchParams, setSearchParams] = useSearchParams();
@@ -76,22 +79,37 @@ export default function ProductsPage() {
 
   useEffect(() => {
     // Dữ liệu cho sidebar: danh mục + thương hiệu (tải 1 lần).
-    categoryApi.list().then((res) => setCategories(res.data));
-    productApi.brands().then((res) => setBrands(res.data));
+    categoryApi.list().then((res) => setCategories(res.data)).catch(() => setCategories([]));
+    productApi.brands().then((res) => setBrands(res.data)).catch(() => setBrands([]));
   }, []);
 
   useEffect(() => {
+    // Cờ ignore: bỏ qua kết quả trả về muộn khi user đổi bộ lọc nhanh
+    // (tránh grid hiện nhầm kết quả của bộ lọc trước).
+    let ignore = false;
     setLoading(true);
     productApi
       .list(query)
       .then((res) => {
+        if (ignore) return;
         setItems(res.data.items ?? []);
         setTotal(res.data.total ?? 0);
       })
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (ignore) return;
+        setItems([]);
+        setTotal(0);
+        message.error(getErrorMessage(err));
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
     // Đồng bộ lại ô nhập giá khi URL đổi (vd bấm "Xoá bộ lọc").
     setMinPrice(query.minPrice ?? null);
     setMaxPrice(query.maxPrice ?? null);
+    return () => {
+      ignore = true;
+    };
   }, [query]);
 
   const hasFilter =

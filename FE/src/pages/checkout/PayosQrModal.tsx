@@ -6,6 +6,11 @@ import { formatVND } from '../../utils/format';
 
 const { Text, Paragraph } = Typography;
 
+// Key sessionStorage: lưu payment id trước khi mở link PayOS ngoài trang, để
+// /payment/payos-callback đọc lại và gọi GET /payments/:id/status xác nhận thật
+// (query string PayOS trả về không có payment id nội bộ, có thể bị giả mạo).
+export const PAYOS_PENDING_PAYMENT_KEY = 'payos_pending_payment_id';
+
 // Hiển thị mã QR PayOS (VietQR) + tự động kiểm tra trạng thái thanh toán (poll).
 // Khi webhook PayOS xác nhận thành công, GET /payments/:id/status trả 'success'.
 export default function PayosQrModal({
@@ -28,6 +33,7 @@ export default function PayosQrModal({
   const [status, setStatus] = useState<'pending' | 'success' | 'failed'>('pending');
   const [checking, setChecking] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const successTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const check = async (silent = true) => {
     if (!silent) setChecking(true);
@@ -36,7 +42,8 @@ export default function PayosQrModal({
       if (res.data.status === 'success') {
         setStatus('success');
         if (timer.current) clearInterval(timer.current);
-        setTimeout(onSuccess, 900); // cho người dùng thấy trạng thái thành công
+        // cho người dùng thấy trạng thái thành công trước khi đóng modal
+        successTimeout.current = setTimeout(onSuccess, 900);
       } else if (res.data.status === 'failed') {
         setStatus('failed');
         if (timer.current) clearInterval(timer.current);
@@ -55,6 +62,7 @@ export default function PayosQrModal({
     timer.current = setInterval(() => check(true), 3000);
     return () => {
       if (timer.current) clearInterval(timer.current);
+      if (successTimeout.current) clearTimeout(successTimeout.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, paymentId]);
@@ -105,7 +113,11 @@ export default function PayosQrModal({
                 {paymentUrl && (
                   <Button
                     icon={<ExportOutlined />}
-                    onClick={() => window.open(paymentUrl, '_blank')}
+                    onClick={() => {
+                      // Lưu lại để trang callback xác nhận thật với BE sau khi PayOS redirect về.
+                      sessionStorage.setItem(PAYOS_PENDING_PAYMENT_KEY, paymentId);
+                      window.open(paymentUrl, '_blank');
+                    }}
                   >
                     Mở trang PayOS
                   </Button>

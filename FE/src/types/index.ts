@@ -88,7 +88,7 @@ export interface Product {
   name: string;
   category_id: string | null;
   brand: string | null;
-  price: number;
+  price: string | number; // decimal -> string ở runtime
   rating: string | null;
   description: string | null;
   is_active: boolean;

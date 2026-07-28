@@ -89,9 +89,11 @@ function AccountInfoTab() {
   const [initialAvatar, setInitialAvatar] = useState<string>('');
 
   useEffect(() => {
+    let ignore = false;
     profileApi
       .getMe()
       .then((res) => {
+        if (ignore) return;
         setMe(res.data);
         form.setFieldsValue({
           full_name: res.data.full_name,
@@ -100,8 +102,15 @@ function AccountInfoTab() {
         setAvatarUrl(res.data.avatar_url ?? '');
         setInitialAvatar(res.data.avatar_url ?? '');
       })
-      .catch((err) => message.error(getErrorMessage(err)))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (!ignore) message.error(getErrorMessage(err));
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Người dùng chọn ảnh từ máy: validate -> nén -> preview. Trả false để antd
@@ -133,8 +142,8 @@ function AccountInfoTab() {
       const avatarChanged = avatarUrl !== initialAvatar;
       await profileApi.updateMe({
         full_name: values.full_name.trim(),
-        // Chuỗi rỗng -> gửi rỗng để BE xoá; BE validate SĐT nếu có ký tự
-        phone_number: values.phone_number?.trim() || undefined,
+        // Luôn gửi (kể cả '') để BE xoá được khi user xoá trắng ô SĐT.
+        phone_number: values.phone_number?.trim() ?? '',
         // Chỉ gửi avatar khi có thay đổi ('' để xoá ảnh hiện tại)
         ...(avatarChanged ? { avatar_url: avatarUrl } : {}),
       });
@@ -282,6 +291,7 @@ function PreferencesTab() {
   const [intentSummary, setIntentSummary] = useState<string | null>(null);
 
   useEffect(() => {
+    let ignore = false;
     Promise.all([
       profileApi.getProfile(),
       profileApi.getPreferences(),
@@ -289,6 +299,7 @@ function PreferencesTab() {
       productApi.brands().catch(() => ({ data: [] as string[] })),
     ])
       .then(([profileRes, prefRes, catRes, brandRes]) => {
+        if (ignore) return;
         const profile: ShoppingProfile = profileRes.data;
         const pref: UserPreferences = prefRes.data;
         setIntentSummary(pref.last_intent_summary);
@@ -306,8 +317,15 @@ function PreferencesTab() {
           budget_max: pref.budget_range?.max,
         });
       })
-      .catch((err) => message.error(getErrorMessage(err)))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (!ignore) message.error(getErrorMessage(err));
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onFinish = async (values: {
@@ -416,7 +434,12 @@ function PreferencesTab() {
                 min={0}
                 placeholder="Tối thiểu"
                 formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={(v) => (v ? Number(v.replace(/,/g, '')) : 0)}
+                // Ô trống phải ra undefined (không phải 0) để hasMin/hasMax coi là
+                // "chưa nhập", tránh khoá nhầm bằng guard min>max khi user xoá ô.
+                parser={(v) => {
+                  const raw = (v ?? '').replace(/,/g, '').trim();
+                  return raw === '' ? (undefined as unknown as number) : Number(raw);
+                }}
               />
             </Form.Item>
             <Form.Item name="budget_max" noStyle>
@@ -425,7 +448,10 @@ function PreferencesTab() {
                 min={0}
                 placeholder="Tối đa"
                 formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={(v) => (v ? Number(v.replace(/,/g, '')) : 0)}
+                parser={(v) => {
+                  const raw = (v ?? '').replace(/,/g, '').trim();
+                  return raw === '' ? (undefined as unknown as number) : Number(raw);
+                }}
               />
             </Form.Item>
           </Space.Compact>

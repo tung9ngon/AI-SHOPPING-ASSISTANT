@@ -28,11 +28,13 @@ export default function ScrollReveal({
     const el = ref.current;
     if (!el) return;
 
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           // Delay cho stagger effect
-          setTimeout(() => {
+          timeoutId = setTimeout(() => {
             el.classList.add('sr-visible');
           }, delay);
           observer.unobserve(el);
@@ -42,7 +44,10 @@ export default function ScrollReveal({
     );
 
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [delay, threshold]);
 
   return (
