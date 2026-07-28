@@ -61,15 +61,17 @@ export default function OrdersPage() {
         Đơn hàng của tôi
       </Title>
 
-      <Segmented
-        options={FILTERS}
-        value={status}
-        onChange={(v) => {
-          setStatus(v as OrderStatus | 'all');
-          setPage(1);
-        }}
-        style={{ marginBottom: 16 }}
-      />
+      {/* Bọc để cuộn ngang trên mobile thay vì tràn khỏi màn hình */}
+      <div style={{ overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
+        <Segmented
+          options={FILTERS}
+          value={status}
+          onChange={(v) => {
+            setStatus(v as OrderStatus | 'all');
+            setPage(1);
+          }}
+        />
+      </div>
 
       {loading ? (
         <Skeleton active paragraph={{ rows: 6 }} />

@@ -22,13 +22,13 @@ export default function AuthLayout({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg,#e6f0ff 0%,#f5f7fb 100%)',
+        background: 'linear-gradient(135deg,#fff3eb 0%,#f5f5fa 100%)',
         padding: 24,
       }}
     >
       <Card style={{ width: '100%', maxWidth: 420, boxShadow: '0 10px 40px rgba(0,0,0,.08)' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Link to="/" style={{ fontSize: 28, color: '#1677ff', fontWeight: 700 }}>
+          <Link to="/" style={{ fontSize: 28, color: '#f26d21', fontWeight: 700 }}>
             <ShoppingOutlined /> AI Shop
           </Link>
           <Title level={3} style={{ marginTop: 12, marginBottom: 4 }}>

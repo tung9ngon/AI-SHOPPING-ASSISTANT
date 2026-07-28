@@ -10,7 +10,6 @@ import {
   Row,
   Select,
   Skeleton,
-  Space,
   Typography,
 } from 'antd';
 import { ClearOutlined, FilterOutlined } from '@ant-design/icons';
@@ -154,13 +153,13 @@ export default function ProductsPage() {
           />
 
           <Text strong>Khoảng giá (₫)</Text>
-          <Space style={{ margin: '8px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0' }}>
             <InputNumber
               placeholder="Từ"
               min={0}
               value={minPrice}
               onChange={setMinPrice}
-              style={{ width: 100 }}
+              style={{ flex: 1, minWidth: 0 }}
             />
             <span>—</span>
             <InputNumber
@@ -168,9 +167,9 @@ export default function ProductsPage() {
               min={0}
               value={maxPrice}
               onChange={setMaxPrice}
-              style={{ width: 100 }}
+              style={{ flex: 1, minWidth: 0 }}
             />
-          </Space>
+          </div>
           <Button
             block
             onClick={() =>

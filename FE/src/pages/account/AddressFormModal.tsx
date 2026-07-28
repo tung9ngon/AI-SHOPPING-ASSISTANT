@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { App, Checkbox, Form, Input, Modal } from 'antd';
 import { addressApi } from '../../api/addresses';
 import { getErrorMessage } from '../../api/client';
+import { phoneRule } from '../../utils/validators';
 import type { Address } from '../../types';
 
 // Modal thêm/sửa địa chỉ. `editing` = null -> thêm mới; có giá trị -> sửa.
@@ -89,14 +90,7 @@ export default function AddressFormModal({
         <Form.Item
           name="phone_number"
           label="Số điện thoại"
-          rules={[
-            { required: true, message: 'Vui lòng nhập số điện thoại' },
-            {
-              // BE chỉ chấp nhận 8-15 ký tự gồm số, dấu + và khoảng trắng
-              pattern: /^(0|\+84)\d{8,9}$/,
-              message: 'Số điện thoại không hợp lệ (VD: 0912345678)',
-            },
-          ]}
+          rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }, phoneRule]}
         >
           <Input placeholder="0912345678" />
         </Form.Item>

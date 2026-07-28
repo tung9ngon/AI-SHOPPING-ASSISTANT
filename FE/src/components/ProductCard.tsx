@@ -1,93 +1,64 @@
-import { Card, Rate, Tag, Typography } from 'antd';
+import { Rate, Tag } from 'antd';
 import { PictureOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import type { ProductListItem } from '../api/products';
 import { formatVND } from '../utils/format';
 
-const { Text } = Typography;
-
-// Thẻ sản phẩm dùng chung cho Trang chủ / Danh sách sản phẩm.
-// `dark`: biến thể nền tối cho trang chủ (không ảnh hưởng trang /products sáng).
+// Thẻ sản phẩm kiểu FPT Shop: card trắng, hover lift, nút "Xem chi tiết" trượt lên.
 export default function ProductCard({
   product,
-  dark = false,
 }: {
   product: ProductListItem;
-  dark?: boolean;
+  dark?: boolean; // giữ prop để không phá chỗ gọi cũ, nhưng không dùng nữa
 }) {
   return (
-    <Link to={`/products/${product.id}`}>
-      <Card
-        hoverable
-        className={dark ? 'product-card--dark' : undefined}
-        styles={{ body: { padding: 12 } }}
-        cover={
-          product.primary_image ? (
-            <img
-              alt={product.name}
-              src={product.primary_image}
-              style={{ height: 180, objectFit: 'cover' }}
-            />
+    <Link to={`/products/${product.id}`} style={{ textDecoration: 'none' }}>
+      <div className="product-card">
+        {/* Ảnh sản phẩm */}
+        <div className="product-card__image-wrap">
+          {product.primary_image ? (
+            <img alt={product.name} src={product.primary_image} />
           ) : (
-            <div
-              className="product-card__noimg"
-              style={{
-                height: 180,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: '#f5f5f5',
-                color: '#bbb',
-                fontSize: 40,
-              }}
-            >
+            <div className="product-card__noimg">
               <PictureOutlined />
             </div>
-          )
-        }
-      >
-        <Text
-          strong
-          style={{
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            minHeight: 44,
-          }}
-        >
-          {product.name}
-        </Text>
-
-        <div style={{ margin: '8px 0', minHeight: 22 }}>
-          {product.brand && <Tag color="blue">{product.brand}</Tag>}
-          {product.category_name && <Tag>{product.category_name}</Tag>}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, minHeight: 20 }}>
-          {product.rating != null ? (
-            <>
-              <Rate
-                disabled
-                allowHalf
-                value={Number(product.rating)}
-                style={{ fontSize: 12 }}
-              />
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {Number(product.rating).toFixed(1)}
-              </Text>
-            </>
-          ) : (
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              Chưa có đánh giá
-            </Text>
           )}
+          {/* Nút xem chi tiết — trượt lên khi hover */}
+          <div className="product-card__quick-view">
+            <button type="button">Xem chi tiết</button>
+          </div>
         </div>
 
-        <div style={{ marginTop: 8, color: '#f5222d', fontWeight: 700, fontSize: 16 }}>
-          {formatVND(product.price)}
+        {/* Nội dung */}
+        <div className="product-card__body">
+          <div className="product-card__name">{product.name}</div>
+
+          <div className="product-card__tags">
+            {product.brand && <Tag color="orange">{product.brand}</Tag>}
+            {product.category_name && <Tag>{product.category_name}</Tag>}
+          </div>
+
+          <div className="product-card__rating">
+            {product.rating != null ? (
+              <>
+                <Rate
+                  disabled
+                  allowHalf
+                  value={Number(product.rating)}
+                  style={{ fontSize: 12 }}
+                />
+                <span className="product-card__rating-text">
+                  {Number(product.rating).toFixed(1)}
+                </span>
+              </>
+            ) : (
+              <span className="product-card__rating-text">Chưa có đánh giá</span>
+            )}
+          </div>
+
+          <div className="product-card__price">{formatVND(product.price)}</div>
         </div>
-      </Card>
+      </div>
     </Link>
   );
 }

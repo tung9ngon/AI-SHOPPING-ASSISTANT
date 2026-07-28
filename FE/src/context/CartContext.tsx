@@ -17,8 +17,9 @@ interface CartContextValue {
   loading: boolean;
   /** true sau khi đã thử tải giỏ ÍT NHẤT 1 lần (tránh redirect sớm khi cart còn null) */
   initialized: boolean;
+  /** true khi lần fetch gần nhất thất bại (mất mạng, server lỗi) */
+  fetchError: boolean;
   refresh: () => Promise<void>;
-  setCart: (c: Cart | null) => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -28,10 +29,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!isAuthenticated) {
       setCart(null);
+      setFetchError(false);
       setInitialized(true);
       return;
     }
@@ -39,8 +42,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       const res = await cartApi.get();
       setCart(res.data);
+      setFetchError(false);
     } catch {
       setCart(null);
+      setFetchError(true);
     } finally {
       setLoading(false);
       setInitialized(true);
@@ -57,8 +62,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ cart, itemCount, loading, initialized, refresh, setCart }),
-    [cart, itemCount, loading, initialized, refresh],
+    () => ({ cart, itemCount, loading, initialized, fetchError, refresh }),
+    [cart, itemCount, loading, initialized, fetchError, refresh],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
@@ -69,3 +74,4 @@ export function useCart() {
   if (!ctx) throw new Error('useCart phải dùng bên trong <CartProvider>');
   return ctx;
 }
+

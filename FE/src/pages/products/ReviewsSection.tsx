@@ -16,7 +16,7 @@ import {
 } from 'antd';
 import { EditOutlined, UserOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { productApi } from '../../api/products';
+import { productApi, type ReviewListItem } from '../../api/products';
 import { getErrorMessage } from '../../api/client';
 import { formatDate } from '../../utils/format';
 import { useAuth } from '../../context/AuthContext';
@@ -24,17 +24,6 @@ import { useAuth } from '../../context/AuthContext';
 const { Text, Paragraph } = Typography;
 
 const PAGE_SIZE = 10;
-
-// Shape thật của review item từ BE (product.service.findReviews)
-interface ReviewItem {
-  id: string;
-  user_name: string;
-  avatar_url: string | null;
-  rating: string | number; // decimal -> string ở runtime
-  title: string | null;
-  content: string | null;
-  created_at: string;
-}
 
 export default function ReviewsSection({
   productId,
@@ -48,7 +37,7 @@ export default function ReviewsSection({
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [items, setItems] = useState<ReviewItem[]>([]);
+  const [items, setItems] = useState<ReviewListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -63,10 +52,8 @@ export default function ReviewsSection({
       productApi
         .reviews(productId, { page: p, limit: PAGE_SIZE })
         .then((res) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const data = res.data as any;
-          setItems(data.items ?? []);
-          setTotal(data.total ?? 0);
+          setItems(res.data.items ?? []);
+          setTotal(res.data.total ?? 0);
         })
         .catch((err) => {
           setItems([]);

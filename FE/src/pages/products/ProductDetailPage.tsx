@@ -290,7 +290,7 @@ export default function ProductDetailPage() {
           </Title>
 
           <Space size={[8, 8]} wrap style={{ marginBottom: 12 }}>
-            {product.brand && <Tag color="blue">{product.brand}</Tag>}
+            {product.brand && <Tag color="orange">{product.brand}</Tag>}
             {product.category && <Tag>{product.category.name}</Tag>}
             {product.tags?.map((t) => (
               <Tag key={t.id} color="orange">

@@ -1,0 +1,77 @@
+/* ===================== THEME TOKEN TOÀN CỤC — phong cách FPT Shop (nền sáng, accent cam) =====================
+   Import 1 lần ở main.tsx để mọi trang đều dùng được biến & nền chung. */
+
+:root {
+  --accent: #f26d21;
+  --accent-dark: #e8530e;
+  --accent-light: #fff3eb;
+  --price-red: #d0021b;
+  --bg-page: #f5f5fa;
+  --bg-card: #ffffff;
+  --text-primary: #1a1a2e;
+  --text-secondary: #6b7280;
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-card-hover: 0 12px 32px rgba(0, 0, 0, 0.12);
+  --radius-card: 12px;
+  --radius-lg: 16px;
+}
+
+/* Nền xám nhạt cho toàn app (card trắng nổi lên trên) — giống fptshop */
+body {
+  background: var(--bg-page);
+}
+
+/* Vùng nội dung của Layout để trong suốt để thấy nền xám */
+.ant-layout {
+  background: transparent;
+}
+
+/* ---- Tiện ích tiêu đề section dùng lại ở nhiều trang ---- */
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 16px;
+}
+.section-title::before {
+  content: '';
+  width: 4px;
+  height: 22px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--accent), var(--accent-dark));
+}
+
+/* ---- Giá đỏ dùng lại ---- */
+.price-red {
+  color: var(--price-red);
+  font-weight: 800;
+}
+.price-old {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  font-weight: 500;
+  font-size: 0.85em;
+}
+
+/* ---- Badge giảm giá góc phải card (kiểu fptshop) ---- */
+.discount-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  background: var(--price-red);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px 6px 6px 0;
+  box-shadow: 0 2px 6px rgba(208, 2, 27, 0.3);
+}
+
+/* ---- Card AntD bo góc mềm hơn + shadow nhẹ đồng bộ ---- */
+.ant-card {
+  border-radius: var(--radius-card);
+}

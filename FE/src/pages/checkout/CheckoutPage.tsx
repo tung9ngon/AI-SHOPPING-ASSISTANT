@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   App,
   Button,
@@ -56,7 +56,7 @@ export default function CheckoutPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [addrModalOpen, setAddrModalOpen] = useState(false);
 
-  const loadAddresses = () => {
+  const loadAddresses = useCallback(() => {
     setAddrLoading(true);
     addressApi
       .list()
@@ -71,9 +71,9 @@ export default function CheckoutPage() {
       })
       .catch(() => setAddresses([]))
       .finally(() => setAddrLoading(false));
-  };
+  }, []);
 
-  useEffect(loadAddresses, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(loadAddresses, [loadAddresses]);
 
   // Voucher chọn kiểu Shopee: 1 mã giảm tiền hàng + 1 mã miễn phí ship
   const [voucherOpen, setVoucherOpen] = useState(false);
@@ -319,7 +319,7 @@ export default function CheckoutPage() {
                 </Radio>
                 <Radio value="payos" style={{ padding: 12, border: '1px solid #eee', borderRadius: 8, width: '100%' }}>
                   <Space>
-                    <QrcodeOutlined style={{ color: '#1677ff', fontSize: 18 }} />
+                    <QrcodeOutlined style={{ color: '#f26d21', fontSize: 18 }} />
                     <span>
                       <b>Chuyển khoản / QR qua PayOS</b>
                       <br />
