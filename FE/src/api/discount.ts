@@ -11,6 +11,7 @@ export interface ValidateDiscountResult {
   discount_value?: number | string;
   discount_amount: number; // số tiền được giảm (đã tính, làm tròn)
   min_order_value?: number | string | null;
+  max_discount?: number | string | null; // trần giảm với mã percent (cần để FE tính lại đúng)
   is_valid: boolean;
   message?: string; // lý do không hợp lệ (nếu có)
 }

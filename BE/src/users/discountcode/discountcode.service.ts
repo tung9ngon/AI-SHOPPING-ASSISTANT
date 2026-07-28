@@ -139,6 +139,7 @@ export class DiscountCodeService {
       discount_value: discount.discount_value,
       discount_amount: Math.round(discountAmount),
       min_order_value: discount.min_order_value,
+      max_discount: discount.max_discount,
       is_valid: isValid,
       ...(message ? { message } : {}),
     };

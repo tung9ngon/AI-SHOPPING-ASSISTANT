@@ -32,6 +32,8 @@ import { profileApi } from '../../api/profile';
 import { categoryApi } from '../../api/categories';
 import { productApi } from '../../api/products';
 import { getErrorMessage } from '../../api/client';
+import { formatDateShort } from '../../utils/format';
+import { phoneRule } from '../../utils/validators';
 import { useAuth } from '../../context/AuthContext';
 import type { MeAccount, ShoppingProfile, UserPreferences } from '../../types';
 import AddressBookPage from './AddressBookPage';
@@ -71,19 +73,6 @@ function fileToResizedDataUrl(file: File, max = 256, quality = 0.85): Promise<st
     };
     reader.readAsDataURL(file);
   });
-}
-
-function formatDate(iso?: string) {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  } catch {
-    return '—';
-  }
 }
 
 // ================= Tab 1: Thông tin tài khoản =================
@@ -200,7 +189,7 @@ function AccountInfoTab() {
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label={<Text type="secondary">Ngày tham gia</Text>}>
-              {formatDate(me?.created_at)}
+              {formatDateShort(me?.created_at)}
             </Descriptions.Item>
           </Descriptions>
         </Card>
@@ -227,12 +216,7 @@ function AccountInfoTab() {
             <Form.Item
               name="phone_number"
               label="Số điện thoại"
-              rules={[
-                {
-                  pattern: /^[0-9+ ]{8,15}$/,
-                  message: 'Số điện thoại 8-15 ký tự (chỉ số, +, khoảng trắng)',
-                },
-              ]}
+              rules={[phoneRule]}
             >
               <Input prefix={<PhoneOutlined />} placeholder="0901234567" allowClear />
             </Form.Item>

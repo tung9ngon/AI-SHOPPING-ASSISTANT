@@ -100,15 +100,6 @@ export interface Product {
   tags?: Tag[];
 }
 
-export interface ProductReview {
-  id: string;
-  rating: number;
-  title: string | null;
-  content: string | null;
-  created_at: string;
-  user?: { id: string; full_name: string; avatar_url?: string | null };
-}
-
 // ---- Address (sổ địa chỉ - nhiều địa chỉ / 1 tài khoản) ----
 // Khớp BE: GET /api/users/me/addresses (address.entity.ts)
 export interface Address {
@@ -226,4 +217,9 @@ export interface Paginated<T> {
   page: number;
   limit: number;
   totalPages?: number;
+}
+
+// Lấy mảng phần tử từ response phân trang — backend có thể trả `data` hoặc `items`.
+export function getItems<T>(res: Paginated<T>): T[] {
+  return res.items ?? res.data ?? [];
 }

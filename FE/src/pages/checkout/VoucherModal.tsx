@@ -216,7 +216,8 @@ export default function VoucherModal({
         discount_type: r.discount_type ?? 'fixed_amount',
         discount_value: r.discount_value ?? 0,
         min_order_value: r.min_order_value ?? null,
-        max_discount: null,
+        // Giữ trần giảm từ BE để calcVoucherAmount không tính vượt (mã percent có max_discount).
+        max_discount: r.max_discount ?? null,
         valid_until: null,
       };
       if (v.discount_type === 'free_shipping') {

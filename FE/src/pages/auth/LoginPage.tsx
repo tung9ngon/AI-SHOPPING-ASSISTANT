@@ -6,12 +6,10 @@ import AuthLayout from './AuthLayout';
 import OAuthButtons from './OAuthButtons';
 import { emailRules } from './passwordRule';
 import { useAuth } from '../../context/AuthContext';
-import { useCart } from '../../context/CartContext';
 import { getErrorMessage } from '../../api/client';
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const { refresh } = useCart();
   const { message } = App.useApp();
   const navigate = useNavigate();
   const location = useLocation();
@@ -24,7 +22,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(values.email, values.password);
-      await refresh();
+      // Giỏ hàng tự nạp lại qua effect trong CartProvider khi isAuthenticated đổi.
       message.success('Đăng nhập thành công');
       navigate(from, { replace: true });
     } catch (err) {

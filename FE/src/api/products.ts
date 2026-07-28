@@ -1,5 +1,17 @@
 import api from './client';
-import type { Paginated, Product, ProductReview, ProductSpec } from '../types';
+import type { Paginated, Product, ProductSpec } from '../types';
+
+// Shape thật của 1 review từ BE (product.service.findReviews): các field user đã
+// được làm phẳng (user_name/avatar_url), KHÁC entity ProductReview.
+export interface ReviewListItem {
+  id: string;
+  user_name: string;
+  avatar_url: string | null;
+  rating: string | number; // decimal -> string ở runtime
+  title: string | null;
+  content: string | null;
+  created_at: string;
+}
 
 export interface ProductQuery {
   search?: string;
@@ -33,7 +45,7 @@ export const productApi = {
     api.get<Product & { review_count: number }>(`/products/${id}`),
   specs: (id: string) => api.get<ProductSpec[]>(`/products/${id}/specs`),
   reviews: (id: string, params?: { page?: number; limit?: number }) =>
-    api.get<Paginated<ProductReview>>(`/products/${id}/reviews`, { params }),
+    api.get<Paginated<ReviewListItem>>(`/products/${id}/reviews`, { params }),
   createReview: (
     id: string,
     data: { rating: number; title?: string; content?: string },

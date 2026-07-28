@@ -4,11 +4,25 @@ export function formatVND(value: number | string | null | undefined): string {
   return n.toLocaleString('vi-VN') + '₫';
 }
 
-// Định dạng ngày giờ
+// Định dạng ngày giờ đầy đủ
 export function formatDate(value: string | Date | null | undefined): string {
   if (!value) return '-';
   const d = new Date(value);
   return d.toLocaleString('vi-VN');
+}
+
+// Định dạng chỉ ngày (dd/MM/yyyy) — dùng cho ProfilePage, các nơi không cần giờ.
+export function formatDateShort(value: string | Date | null | undefined): string {
+  if (!value) return '—';
+  try {
+    return new Date(value).toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  } catch {
+    return '—';
+  }
 }
 
 // Nhãn tiếng Việt cho trạng thái đơn hàng

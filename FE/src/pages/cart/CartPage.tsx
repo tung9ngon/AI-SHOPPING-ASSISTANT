@@ -8,6 +8,7 @@ import {
   Empty,
   InputNumber,
   Popconfirm,
+  Result,
   Row,
   Skeleton,
   Typography,
@@ -27,7 +28,7 @@ import { formatVND } from '../../utils/format';
 const { Title, Text } = Typography;
 
 export default function CartPage() {
-  const { cart, loading, refresh, itemCount } = useCart();
+  const { cart, loading, refresh, itemCount, fetchError } = useCart();
   const { message } = App.useApp();
   const navigate = useNavigate();
 
@@ -61,6 +62,22 @@ export default function CartPage() {
 
   if (loading && !cart) {
     return <Skeleton active paragraph={{ rows: 6 }} />;
+  }
+
+  // Phân biệt "giỏ trống" (thật sự 0 sản phẩm) vs "lỗi tải giỏ" (mất mạng, server 500)
+  if (fetchError && !cart) {
+    return (
+      <Result
+        status="error"
+        title="Không tải được giỏ hàng"
+        subTitle="Có lỗi kết nối hoặc máy chủ. Vui lòng thử lại."
+        extra={
+          <Button type="primary" onClick={() => refresh()}>
+            Thử lại
+          </Button>
+        }
+      />
+    );
   }
 
   const items = cart?.items ?? [];
