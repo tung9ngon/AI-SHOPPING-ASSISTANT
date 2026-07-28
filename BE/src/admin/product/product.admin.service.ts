@@ -55,7 +55,8 @@ export class AdminProductService {
 
     const qb = this.productRepo
       .createQueryBuilder('product')
-      .leftJoinAndSelect('product.category', 'category');
+      .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.images', 'images');
 
     if (search) {
       qb.andWhere('product.name ILIKE :search', { search: `%${search}%` });
@@ -85,6 +86,11 @@ export class AdminProductService {
         qb.orderBy('product.created_at', 'DESC');
     }
 
+    qb.addOrderBy('images.is_primary', 'DESC').addOrderBy(
+      'images.sort_order',
+      'ASC',
+    );
+
     qb.skip((page - 1) * limit).take(limit);
 
     const [items, total] = await qb.getManyAndCount();
@@ -99,6 +105,7 @@ export class AdminProductService {
         rating: p.rating,
         is_active: p.is_active,
         created_at: p.created_at,
+        thumbnail: p.images?.[0]?.image_url ?? null,
       })),
       total,
       page,
@@ -153,7 +160,6 @@ export class AdminProductService {
   }
 
   // DELETE /api/admin/products/:id
-  // Xoá mềm: chỉ ẩn sản phẩm (is_active = false), không xoá cứng khỏi DB
   async remove(id: string) {
     const product = await this.findProductOrFail(id);
     product.is_active = false;
@@ -161,10 +167,8 @@ export class AdminProductService {
     return { message: 'Đã ẩn sản phẩm' };
   }
 
-  // ---------------- Ảnh sản phẩm ----------------
 
-  // POST /api/admin/products/:id/images  (multipart/form-data, field "file")
-  // Thêm 1 ảnh mới: upload lên Cloudinary rồi lưu image_url + public_id vào DB
+  // POST /api/admin/products/:id/images
   async addImage(
     productId: string,
     file: Express.Multer.File,
@@ -178,7 +182,6 @@ export class AdminProductService {
       `products/${productId}`,
     );
 
-    // Nếu set ảnh mới làm primary, bỏ cờ primary ở các ảnh cũ
     if (dto.is_primary) {
       await this.imageRepo.update(
         { product_id: productId },
@@ -204,7 +207,6 @@ export class AdminProductService {
   }
 
   // PUT /api/admin/products/:id/images/:image_id  (multipart/form-data, field "file" - optional)
-  // Cho phép: thay ảnh mới (nếu có file) và/hoặc chỉ đổi is_primary, sort_order
   async updateImage(
     productId: string,
     imageId: string,
@@ -221,7 +223,6 @@ export class AdminProductService {
         file,
         `products/${productId}`,
       );
-      // Upload thành công mới xoá ảnh cũ, tránh mất ảnh nếu upload lỗi giữa chừng
       await this.cloudinaryService.deleteImage(image.public_id);
       image.image_url = uploadResult.secure_url;
       image.public_id = uploadResult.public_id;
@@ -261,7 +262,6 @@ export class AdminProductService {
     await this.cloudinaryService.deleteImage(image.public_id);
     await this.imageRepo.remove(image);
 
-    // Nếu vừa xoá ảnh chính, tự động gán ảnh chính mới (ảnh còn lại có sort_order nhỏ nhất)
     if (image.is_primary) {
       const [next] = await this.imageRepo.find({
         where: { product_id: productId },
@@ -277,7 +277,6 @@ export class AdminProductService {
     return { message: 'Đã xoá ảnh sản phẩm' };
   }
 
-  // ---------------- Thông số kỹ thuật (specs) ----------------
 
   // POST /api/admin/products/:id/specs
   async addSpec(productId: string, dto: CreateProductSpecDto) {
@@ -335,7 +334,6 @@ export class AdminProductService {
     return { message: 'Đã xoá thông số kỹ thuật' };
   }
 
-  // ---------------- Tags ----------------
 
   // POST /api/admin/products/:id/tags
   async addTag(productId: string, dto: CreateProductTagDto) {

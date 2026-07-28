@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { DiscountCode } from '../../database/discount-code.entity';
 import {
   CreateDiscountCodeDto,
@@ -25,19 +25,48 @@ export class AdminDiscountCodeService {
     return discount;
   }
 
+  private computeStatus(discount: DiscountCode): 'running' | 'paused' {
+    if (!discount.is_active) return 'paused';
+
+    const now = new Date();
+    if (discount.valid_from && new Date(discount.valid_from) > now) {
+      return 'paused';
+    }
+    if (discount.valid_until && new Date(discount.valid_until) < now) {
+      return 'paused';
+    }
+    return 'running';
+  }
+
   // GET /api/admin/discount-codes
   async findAll(query: QueryDiscountCodeDto) {
-    const { search, isActive, page = 1, limit = 20 } = query;
+    const { search, isActive, status, page = 1, limit = 20 } = query;
 
-    const [items, total] = await this.discountRepo.findAndCount({
-      where: {
-        ...(search ? { code: ILike(`%${search}%`) } : {}),
-        ...(isActive !== undefined ? { is_active: isActive } : {}),
-      },
-      order: { created_at: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const qb = this.discountRepo.createQueryBuilder('d');
+
+    if (search) {
+      qb.andWhere('d.code ILIKE :search', { search: `%${search}%` });
+    }
+
+    if (isActive !== undefined) {
+      qb.andWhere('d.is_active = :isActive', { isActive });
+    }
+
+    if (status === 'running') {
+      qb.andWhere('d.is_active = true')
+        .andWhere('(d.valid_from IS NULL OR d.valid_from <= NOW())')
+        .andWhere('(d.valid_until IS NULL OR d.valid_until >= NOW())');
+    } else if (status === 'paused') {
+      qb.andWhere(
+        '(d.is_active = false OR (d.valid_from IS NOT NULL AND d.valid_from > NOW()) OR (d.valid_until IS NOT NULL AND d.valid_until < NOW()))',
+      );
+    }
+
+    qb.orderBy('d.created_at', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [items, total] = await qb.getManyAndCount();
 
     return {
       items: items.map((d) => ({
@@ -50,6 +79,7 @@ export class AdminDiscountCodeService {
         valid_from: d.valid_from,
         valid_until: d.valid_until,
         is_active: d.is_active,
+        status: this.computeStatus(d),
       })),
       total,
       page,
@@ -113,7 +143,6 @@ export class AdminDiscountCodeService {
   }
 
   // DELETE /api/admin/discount-codes/:id
-  // Vô hiệu hoá (không xoá cứng để giữ lịch sử các đơn hàng đã dùng mã)
   async remove(id: string) {
     const discount = await this.findOrFail(id);
     discount.is_active = false;

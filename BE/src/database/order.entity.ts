@@ -15,7 +15,6 @@ import { OrderItem } from './order-item.entity';
 import { Payment } from './payment.entity';
 import { Address } from './address.entity';
 
-// simulated_success / cancelled / pending / paid / shipped
 export type OrderStatus = 'simulated_success' | 'cancelled' | 'pending' | 'paid' | 'shipped';
 
 @Entity('orders')
@@ -36,8 +35,7 @@ export class Order {
   @Column({ type: 'uuid', nullable: true })
   cart_id: string | null;
 
-  // ---------- Địa chỉ giao hàng ----------
-  // Tham chiếu tới địa chỉ gốc (có thể null nếu address bị xoá sau này)
+  // Địa chỉ giao hàng
   @Column({ type: 'uuid', nullable: true })
   address_id: string | null;
 
@@ -49,8 +47,6 @@ export class Order {
   @JoinColumn({ name: 'address_id' })
   address: Address | null;
 
-  // Snapshot thông tin địa chỉ tại thời điểm đặt hàng,
-  // để đơn hàng không bị ảnh hưởng nếu user sửa/xoá address gốc sau này.
   @Column({ type: 'varchar', length: 255 })
   shipping_full_address: string;
 
@@ -70,7 +66,6 @@ export class Order {
   @JoinColumn({ name: 'discount_code_id' })
   discount_code: DiscountCode | null;
 
-  // Mã giảm giá miễn phí ship, áp dụng song song với discount_code (nếu có)
   @Column({ type: 'uuid', nullable: true })
   freeship_code_id: string | null;
 
@@ -90,18 +85,15 @@ export class Order {
   @Column({ type: 'bigint', default: 0 })
   discount_amount: number;
 
-  // Số tiền được giảm từ mã freeship (tách riêng khỏi discount_amount)
   @Column({ type: 'bigint', default: 0 })
   shipping_discount_amount: number;
 
   @Column({ type: 'bigint' })
   total: number;
 
-  // simulated_success / cancelled / pending / paid / shipped
   @Column({ type: 'varchar', length: 30, default: 'simulated_success' })
   status: OrderStatus;
 
-  // Ghi chú đơn hàng
   @Column({ type: 'text', nullable: true })
   note: string | null;
 

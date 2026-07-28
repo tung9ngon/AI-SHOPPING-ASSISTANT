@@ -21,6 +21,9 @@ export class QueryDiscountCodeDto {
   @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean;
+  @IsOptional()
+  @IsIn(['running', 'paused'])
+  status?: 'running' | 'paused';
 
   @IsOptional()
   @Type(() => Number)
