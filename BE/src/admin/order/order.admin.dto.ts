@@ -19,7 +19,6 @@ const ORDER_STATUSES: OrderStatus[] = [
 
 // GET /api/admin/orders
 export class QueryAdminOrderDto {
-  // Tìm theo tên khách hàng
   @IsOptional()
   @IsString()
   search?: string;

@@ -22,6 +22,7 @@ import { AdminPaymentModule } from './admin/payment/payment.admin.module';
 import { ChatModule } from './users/chat/chat.module';
 import { AddressModule } from './users/address/address.module'
 import { ProfileModule } from './users/profile/profile.module';
+import { AdminStatisticsModule } from './admin/statistics/statistics.admin.module';
 
 @Module({
   imports: [
@@ -64,10 +65,12 @@ import { ProfileModule } from './users/profile/profile.module';
     OrderModule,
     AdminOrderModule,
     PaymentModule,
+    AdminPaymentModule,
     AdminProductModule,
     ChatModule,
     AddressModule,
-    ProfileModule
+    ProfileModule,
+    AdminStatisticsModule,
   ],
 })
 class AppModule {}

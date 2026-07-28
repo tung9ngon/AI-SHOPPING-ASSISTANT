@@ -25,7 +25,6 @@ export class QueryAdminProductDto {
   @IsString()
   brand?: string;
 
-  // Admin xem được cả sản phẩm ẩn, filter tuỳ chọn theo trạng thái
   @IsOptional()
   @Type(() => Boolean)
   @IsBoolean()
@@ -99,8 +98,7 @@ export class UpdateProductDto {
   is_active?: boolean;
 }
 
-// POST /api/admin/products/:id/images (multipart/form-data, kèm file field "file")
-// is_primary / sort_order là các field text đi kèm trong cùng form-data (optional)
+// POST /api/admin/products/:id/images
 export class CreateProductImageDto {
   @IsOptional()
   @Type(() => Boolean)
@@ -114,7 +112,6 @@ export class CreateProductImageDto {
 }
 
 // PUT /api/admin/products/:id/images/:image_id
-// Có thể gửi kèm file mới (thay ảnh) và/hoặc chỉ đổi is_primary, sort_order
 export class UpdateProductImageDto {
   @IsOptional()
   @Type(() => Boolean)
