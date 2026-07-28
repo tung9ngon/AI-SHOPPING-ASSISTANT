@@ -1,0 +1,108 @@
+.admin-discount-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-discount-note {
+  padding: 10px 14px;
+  border: 1px solid #ffe7ba;
+  border-radius: 8px;
+  background: #fff7e6;
+  color: #ad6800;
+  font-size: 13px;
+}
+
+.admin-discount-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-discount-filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.admin-discount-search {
+  width: 240px;
+}
+
+.admin-discount-status {
+  width: 150px;
+}
+
+.admin-discount-table {
+  overflow: hidden;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.admin-discount-table .ant-table {
+  background: #ffffff;
+}
+
+.admin-discount-table .ant-table-thead > tr > th {
+  height: 38px;
+  border-bottom: 1px solid #f1f1f1;
+  background: #fafafa;
+  color: #8b8f96;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.admin-discount-table .ant-table-tbody > tr > td {
+  height: 42px;
+  border-bottom: 1px solid #f2f2f2;
+  color: #24272d;
+}
+
+.admin-discount-table .ant-table-tbody > tr:last-child > td {
+  border-bottom: 0;
+}
+
+.admin-discount-table .ant-table-cell::before {
+  display: none;
+}
+
+.admin-discount-desc,
+.admin-discount-date {
+  color: #8b8f96;
+}
+
+.admin-discount-value {
+  font-weight: 800;
+}
+
+.admin-discount-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.admin-discount-actions .ant-btn {
+  height: auto;
+  padding: 0 4px;
+}
+
+.admin-discount-form {
+  padding-top: 8px;
+}
+
+@media (max-width: 760px) {
+  .admin-discount-toolbar,
+  .admin-discount-filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-discount-search,
+  .admin-discount-status,
+  .admin-discount-toolbar .ant-btn {
+    width: 100%;
+  }
+}

@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import UserLayout from './layouts/UserLayout';
+import AdminLayout from './layouts/AdminLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import Placeholder from './pages/Placeholder';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
@@ -16,6 +18,12 @@ import ProfilePage from './pages/account/ProfilePage';
 import OrdersPage from './pages/orders/OrdersPage';
 import OrderDetailPage from './pages/orders/OrderDetailPage';
 import PriceAlertsPage from './pages/pricealerts/PriceAlertsPage';
+import DashboardPage from './pages/admin/DashboardPage';
+import CategoryListPage from './pages/admin/CategoryListPage';
+import ProductListPage from './pages/admin/ProductListPage';
+import OrderListPage from './pages/admin/OrderListPage';
+import DiscountListPage from './pages/admin/DiscountListPage';
+import PaymentListPage from './pages/admin/PaymentListPage';
 
 // Bản đồ tuyến (route map). Các màn hình sẽ lần lượt được thay thế
 // từ <Placeholder> sang trang thật qua từng bước.
@@ -93,8 +101,22 @@ export default function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-      {/* ===== Khu vực quản trị (sẽ thêm sau) ===== */}
-      <Route path="/admin/*" element={<Placeholder name="Trang quản trị" />} />
+      {/* ===== Khu vực quản trị ===== */}
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <AdminLayout />
+          </AdminRoute>
+        }
+      >
+        <Route index element={<DashboardPage />} />
+        <Route path="categories" element={<CategoryListPage />} />
+        <Route path="products" element={<ProductListPage />} />
+        <Route path="orders" element={<OrderListPage />} />
+        <Route path="discounts" element={<DiscountListPage />} />
+        <Route path="payments" element={<PaymentListPage />} />
+      </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
