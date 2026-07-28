@@ -1,11 +1,13 @@
 import { Form, Input, Button, App, Steps } from 'antd';
 import { MailOutlined, LockOutlined, SafetyOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AuthLayout from './AuthLayout';
 import { emailRules, passwordRules } from './passwordRule';
 import { authApi } from '../../api/auth';
 import { getErrorMessage } from '../../api/client';
+
+const OTP_COOLDOWN_SEC = 60; // chặn gửi OTP dồn dập; khớp thời hạn OTP 5 phút ở BE
 
 export default function ForgotPasswordPage() {
   const { message } = App.useApp();
@@ -13,14 +15,39 @@ export default function ForgotPasswordPage() {
   const [step, setStep] = useState(0);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const cooldownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (cooldownTimer.current) clearInterval(cooldownTimer.current);
+    },
+    [],
+  );
+
+  const startCooldown = () => {
+    setCooldown(OTP_COOLDOWN_SEC);
+    if (cooldownTimer.current) clearInterval(cooldownTimer.current);
+    cooldownTimer.current = setInterval(() => {
+      setCooldown((c) => {
+        if (c <= 1) {
+          if (cooldownTimer.current) clearInterval(cooldownTimer.current);
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+  };
 
   const sendOtp = async (values: { email: string }) => {
+    if (cooldown > 0) return;
     setLoading(true);
     try {
       await authApi.forgotPassword(values.email);
       setEmail(values.email);
       message.success('Nếu email tồn tại, mã OTP đã được gửi');
       setStep(1);
+      startCooldown();
     } catch (err) {
       message.error(getErrorMessage(err));
     } finally {
@@ -68,8 +95,15 @@ export default function ForgotPasswordPage() {
           <Form.Item name="email" label="Email" rules={emailRules}>
             <Input prefix={<MailOutlined />} placeholder="email@example.com" size="large" />
           </Form.Item>
-          <Button type="primary" htmlType="submit" block size="large" loading={loading}>
-            Gửi mã OTP
+          <Button
+            type="primary"
+            htmlType="submit"
+            block
+            size="large"
+            loading={loading}
+            disabled={cooldown > 0}
+          >
+            {cooldown > 0 ? `Gửi lại sau ${cooldown}s` : 'Gửi mã OTP'}
           </Button>
         </Form>
       )}

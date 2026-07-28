@@ -94,7 +94,7 @@ export default function ChatWidget() {
             </button>
           </div>
 
-          <div className="chat-body" ref={bodyRef}>
+          <div className="chat-body" ref={bodyRef} role="log" aria-live="polite">
             {messages.map((msg, i) =>
               msg.type === 'products' ? (
                 <div className="chat-products" key={i}>
@@ -153,6 +153,7 @@ export default function ChatWidget() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && send()}
               placeholder="Nhập câu hỏi của bạn..."
+              aria-label="Nhập câu hỏi cho trợ lý AI"
             />
             <button onClick={() => send()} disabled={!input.trim() || typing} aria-label="Gửi">
               <SendOutlined />

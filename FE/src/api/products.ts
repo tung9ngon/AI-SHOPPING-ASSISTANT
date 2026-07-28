@@ -30,7 +30,7 @@ export interface ProductListItem {
   id: string;
   name: string;
   brand: string | null;
-  price: number;
+  price: string | number; // decimal -> string ở runtime
   rating: string | null;
   primary_image: string | null;
   category_name: string | null;

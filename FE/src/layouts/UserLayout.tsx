@@ -157,6 +157,7 @@ export default function UserLayout() {
             icon={<MenuOutlined style={{ color: '#fff', fontSize: 20 }} />}
             onClick={() => setDrawerOpen(true)}
             style={{ padding: 4 }}
+            aria-label="Mở menu điều hướng"
           />
         )}
 
@@ -194,13 +195,13 @@ export default function UserLayout() {
 
           {/* Bell icon — ẩn trên mobile */}
           {!isMobile && isAuthenticated && (
-            <Link to="/price-alerts" style={{ color: '#fff' }}>
+            <Link to="/price-alerts" style={{ color: '#fff' }} aria-label="Theo dõi giá">
               <BellOutlined style={{ fontSize: 18 }} />
             </Link>
           )}
 
           {/* Giỏ hàng — luôn hiện */}
-          <Link to="/cart" style={{ color: '#fff' }}>
+          <Link to="/cart" style={{ color: '#fff' }} aria-label={`Giỏ hàng (${itemCount} sản phẩm)`}>
             <Badge count={itemCount} size="small">
               <ShoppingCartOutlined style={{ fontSize: 20, color: '#fff' }} />
             </Badge>

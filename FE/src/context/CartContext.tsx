@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -31,7 +32,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [initialized, setInitialized] = useState(false);
   const [fetchError, setFetchError] = useState(false);
 
+  // Giá trị isAuthenticated MỚI NHẤT, để so sánh với giá trị đã đóng trong
+  // closure của refresh() tại thời điểm gọi (xem isStale() bên dưới).
+  const isAuthenticatedRef = useRef(isAuthenticated);
+  isAuthenticatedRef.current = isAuthenticated;
+
   const refresh = useCallback(async () => {
+    // Nếu người dùng đăng xuất (isAuthenticated đổi) trong lúc request này còn
+    // đang chạy, kết quả trả về muộn sẽ bị bỏ qua thay vì ghi đè giỏ hàng đã
+    // bị dọn về null.
+    const isStale = () => isAuthenticatedRef.current !== isAuthenticated;
+
     if (!isAuthenticated) {
       setCart(null);
       setFetchError(false);
@@ -41,14 +52,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       const res = await cartApi.get();
+      if (isStale()) return;
       setCart(res.data);
       setFetchError(false);
     } catch {
+      if (isStale()) return;
       setCart(null);
       setFetchError(true);
     } finally {
-      setLoading(false);
-      setInitialized(true);
+      if (!isStale()) {
+        setLoading(false);
+        setInitialized(true);
+      }
     }
   }, [isAuthenticated]);
 

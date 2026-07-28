@@ -39,16 +39,23 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
   const load = useCallback(() => {
     if (!id) return;
     setLoading(true);
     setNotFound(false);
+    setLoadError(false);
     orderApi
       .detail(id)
       .then((res) => setOrder(res.data))
-      .catch(() => setNotFound(true))
+      .catch((err) => {
+        // Chỉ coi là "không tìm thấy" khi BE trả 404; lỗi khác (mất mạng, 500)
+        // hiển thị màn lỗi có nút thử lại, tránh hiểu nhầm thành đơn không tồn tại.
+        if (err?.response?.status === 404) setNotFound(true);
+        else setLoadError(true);
+      })
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -72,6 +79,21 @@ export default function OrderDetailPage() {
   };
 
   if (loading) return <Skeleton active paragraph={{ rows: 8 }} />;
+
+  if (loadError) {
+    return (
+      <Result
+        status="error"
+        title="Không tải được đơn hàng"
+        subTitle="Có lỗi kết nối hoặc máy chủ. Vui lòng thử lại."
+        extra={
+          <Button type="primary" onClick={load}>
+            Thử lại
+          </Button>
+        }
+      />
+    );
+  }
 
   if (notFound || !order) {
     return (

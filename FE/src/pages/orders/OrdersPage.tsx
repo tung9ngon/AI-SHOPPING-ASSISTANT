@@ -12,7 +12,9 @@ import {
 } from 'antd';
 import { RightOutlined, ShoppingOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
+import { App } from 'antd';
 import { orderApi, type OrderListItem } from '../../api/orders';
+import { getErrorMessage } from '../../api/client';
 import type { OrderStatus } from '../../types';
 import {
   formatVND,
@@ -34,6 +36,7 @@ const FILTERS: { label: string; value: OrderStatus | 'all' }[] = [
 ];
 
 export default function OrdersPage() {
+  const { message } = App.useApp();
   const [status, setStatus] = useState<OrderStatus | 'all'>('all');
   const [items, setItems] = useState<OrderListItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -41,6 +44,7 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let ignore = false;
     setLoading(true);
     orderApi
       .list({
@@ -49,11 +53,23 @@ export default function OrdersPage() {
         limit: PAGE_SIZE,
       })
       .then((res) => {
+        if (ignore) return;
         setItems(res.data.items ?? []);
         setTotal(res.data.total ?? 0);
       })
-      .finally(() => setLoading(false));
-  }, [status, page]);
+      .catch((err) => {
+        if (ignore) return;
+        setItems([]);
+        setTotal(0);
+        message.error(getErrorMessage(err));
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [status, page, message]);
 
   return (
     <div>

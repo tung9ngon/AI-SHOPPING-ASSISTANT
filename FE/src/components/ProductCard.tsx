@@ -5,19 +5,14 @@ import type { ProductListItem } from '../api/products';
 import { formatVND } from '../utils/format';
 
 // Thẻ sản phẩm kiểu FPT Shop: card trắng, hover lift, nút "Xem chi tiết" trượt lên.
-export default function ProductCard({
-  product,
-}: {
-  product: ProductListItem;
-  dark?: boolean; // giữ prop để không phá chỗ gọi cũ, nhưng không dùng nữa
-}) {
+export default function ProductCard({ product }: { product: ProductListItem }) {
   return (
     <Link to={`/products/${product.id}`} style={{ textDecoration: 'none' }}>
       <div className="product-card">
         {/* Ảnh sản phẩm */}
         <div className="product-card__image-wrap">
           {product.primary_image ? (
-            <img alt={product.name} src={product.primary_image} />
+            <img alt={product.name} src={product.primary_image} loading="lazy" />
           ) : (
             <div className="product-card__noimg">
               <PictureOutlined />
