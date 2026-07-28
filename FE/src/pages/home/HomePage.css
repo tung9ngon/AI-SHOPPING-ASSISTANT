@@ -9,9 +9,11 @@
   transform: translateX(-50vw);
   margin-top: -24px;
   margin-bottom: -24px;
-  padding-bottom: 64px;
+  padding-bottom: 48px;
   background: var(--bg-page);
   color: var(--text-primary);
+  /* Chặn tràn ngang phát sinh thanh cuộn (clip: không ép trục Y thành scroll) */
+  overflow-x: clip;
 }
 
 /* Khối nội dung căn giữa */
@@ -44,7 +46,9 @@
   /* Chừa khoảng trống dưới hero để thẻ "cam kết" (home-features) nổi đè vào
      vùng cam trống, KHÔNG đè lên khối stats. */
   padding: 48px 0 80px;
-  background: linear-gradient(135deg, #f26d21 0%, #e8530e 40%, #d4400a 100%);
+  /* Sunset trầm sâu: cam sáng -> cam cháy -> nâu đỏ đậm.
+     Nền tối dần giúp hiệu ứng tia trắng (rings/rays) nổi rõ hơn. */
+  background: linear-gradient(135deg, #f26d21 0%, #b8380a 45%, #4a1103 100%);
   isolation: isolate;
 }
 
@@ -58,13 +62,13 @@
   transform: translate(-50%, -50%);
   background: repeating-radial-gradient(
     circle at center,
-    rgba(255, 255, 255, 0.06) 0,
-    rgba(255, 255, 255, 0.06) 1px,
+    rgba(255, 255, 255, 0.11) 0,
+    rgba(255, 255, 255, 0.11) 1px,
     transparent 1px,
     transparent 50px
   );
-  -webkit-mask-image: radial-gradient(circle at center, #000 0%, transparent 60%);
-  mask-image: radial-gradient(circle at center, #000 0%, transparent 60%);
+  -webkit-mask-image: radial-gradient(circle at center, #000 0%, transparent 65%);
+  mask-image: radial-gradient(circle at center, #000 0%, transparent 65%);
   animation: hero-spin 80s linear infinite;
   z-index: 0;
 }
@@ -79,7 +83,7 @@
   transform: translate(-50%, -50%);
   background: repeating-conic-gradient(
     from 0deg,
-    rgba(255, 255, 255, 0.04) 0deg,
+    rgba(255, 255, 255, 0.08) 0deg,
     transparent 1deg,
     transparent 8deg
   );
@@ -324,6 +328,8 @@
   padding: 24px;
   background: linear-gradient(135deg, #fff5ee 0%, #fff0e6 100%);
   border: 1.5px solid rgba(242, 109, 33, 0.2);
+  /* Giữ watermark ngầm gọn trong khung bo góc của dải Deal */
+  overflow: hidden;
 }
 .home-deal__head {
   display: flex;

@@ -136,7 +136,7 @@ export default function UserLayout() {
   ];
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout>
       <Header
         style={{
           display: 'flex',

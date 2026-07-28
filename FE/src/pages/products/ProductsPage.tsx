@@ -98,6 +98,7 @@ export default function ProductsPage() {
     query.search || query.categoryId || query.brand || query.minPrice != null || query.maxPrice != null;
 
   return (
+    <div className="brand-bg" style={{ overflowX: 'clip' }}>
     <Row gutter={[24, 24]}>
       {/* ===== Sidebar bộ lọc ===== */}
       <Col xs={24} md={7} lg={6} xl={5}>
@@ -249,5 +250,6 @@ export default function ProductsPage() {
         )}
       </Col>
     </Row>
+    </div>
   );
 }
