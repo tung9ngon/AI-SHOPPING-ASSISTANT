@@ -120,7 +120,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div className="home-container">
+      <div className="home-container brand-bg">
         {/* ===== Dải cam kết ===== */}
         <ScrollReveal>
           <div className="home-features">
@@ -169,7 +169,7 @@ export default function HomePage() {
         {!loading && deals.length > 0 && (
           <ScrollReveal>
             <div className="home-section">
-              <div className="home-deal">
+              <div className="home-deal brand-bg brand-bg--soft">
                 <div className="home-deal__head">
                   <h2 className="home-deal__title">
                     <FireOutlined className="home-deal__fire" />
