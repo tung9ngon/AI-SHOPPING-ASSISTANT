@@ -19,7 +19,7 @@ type Message =
 const SUGGESTIONS = ['Laptop cho sinh viên', 'Điện thoại dưới 10 triệu', 'Có hãng nào?', 'Đồng hồ thông minh'];
 
 const WELCOME =
-  'Xin chào 👋 Mình là trợ lý AI của AI Shop. Bạn đang tìm sản phẩm gì? Mình có thể tư vấn laptop, điện thoại, đồng hồ... theo nhu cầu và ngân sách của bạn.';
+  'Xin chào 👋 Mình là trợ lý AI của NexTech. Bạn đang tìm sản phẩm gì? Mình có thể tư vấn laptop, điện thoại, đồng hồ... theo nhu cầu và ngân sách của bạn.';
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
