@@ -85,6 +85,15 @@ export const adminProductApi = {
 };
 
 // ===== Admin: Orders =====
+export interface AdminOrderListItem {
+  id: string;
+  user_name: string | null;
+  product_count: number;
+  total: number | string;
+  status: OrderStatus;
+  created_at: string;
+}
+
 export const adminOrderApi = {
   list: (params?: {
     search?: string;
@@ -93,7 +102,7 @@ export const adminOrderApi = {
     to?: string;
     page?: number;
     limit?: number;
-  }) => api.get<Paginated<Order>>('/admin/orders', { params }),
+  }) => api.get<Paginated<AdminOrderListItem>>('/admin/orders', { params }),
   detail: (id: string) => api.get<Order>(`/admin/orders/${id}`),
   updateStatus: (id: string, status: OrderStatus) =>
     api.put<Order>(`/admin/orders/${id}/status`, { status }),
