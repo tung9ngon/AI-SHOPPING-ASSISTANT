@@ -11,6 +11,7 @@ import {
 import {
   adminOrderApi,
   adminStatisticsApi,
+  type AdminOrderListItem,
   type AdminOverviewStats,
   type AdminRevenueStats,
 } from '../../api/admin';
@@ -19,18 +20,12 @@ import type { OrderStatus } from '../../types';
 import { formatDate, formatVND, ORDER_STATUS_COLOR, ORDER_STATUS_LABEL } from '../../utils/format';
 import './DashboardPage.css';
 
-interface AdminOrderRow {
-  id: string;
-  user_name?: string | null;
-  total: number;
-  status: OrderStatus;
-  created_at: string;
-}
+type AdminOrderRow = AdminOrderListItem;
 
 interface StatCardProps {
   label: string;
   value: string;
-  trend: string;
+  subtext: string;
   tone: 'blue' | 'green' | 'purple' | 'orange';
   icon: ReactNode;
 }
@@ -38,6 +33,21 @@ interface StatCardProps {
 const MONTH_LABELS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
 
 const FALLBACK_REVENUE = [42, 66, 59, 83, 75, 96, 90, 102, 94, 77, 88, 101];
+
+const FALLBACK_OVERVIEW: AdminOverviewStats = {
+  total_orders: 1240,
+  total_revenue: 2_450_000_000,
+  total_products: 18,
+  active_products: 18,
+  total_users: 8320,
+  orders_by_status: [
+    { status: 'pending', count: 18 },
+    { status: 'paid', count: 42 },
+    { status: 'shipped', count: 25 },
+    { status: 'cancelled', count: 8 },
+    { status: 'simulated_success', count: 7 },
+  ],
+};
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
   pending: { label: 'Chờ xử lý', color: '#f59f00' },
@@ -99,14 +109,25 @@ function shortOrderId(id: string) {
   return `#${id.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
 }
 
-function StatCard({ label, value, trend, tone, icon }: StatCardProps) {
+function normalizeAdminOrder(item: AdminOrderListItem): AdminOrderRow {
+  return {
+    id: item.id,
+    user_name: item.user_name,
+    product_count: item.product_count,
+    total: item.total,
+    status: item.status,
+    created_at: item.created_at,
+  };
+}
+
+function StatCard({ label, value, subtext, tone, icon }: StatCardProps) {
   return (
     <div className="admin-stat-card">
       <div className={`admin-stat-icon admin-stat-icon-${tone}`}>{icon}</div>
       <div>
         <div className="admin-stat-label">{label}</div>
         <div className="admin-stat-value">{value}</div>
-        <div className="admin-stat-trend">▲ {trend}</div>
+        <div className="admin-stat-subtext">{subtext}</div>
       </div>
     </div>
   );
@@ -117,29 +138,53 @@ export default function DashboardPage() {
   const [revenue, setRevenue] = useState<AdminRevenueStats | null>(null);
   const [orders, setOrders] = useState<AdminOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<string[]>([]);
 
   useEffect(() => {
     let ignore = false;
 
     async function loadDashboard() {
       setLoading(true);
-      setError('');
-      try {
-        const [overviewRes, revenueRes, ordersRes] = await Promise.all([
-          adminStatisticsApi.overview(),
-          adminStatisticsApi.revenue({ groupBy: 'month' }),
-          adminOrderApi.list({ page: 1, limit: 5 }),
-        ]);
-        if (ignore) return;
-        setOverview(overviewRes.data);
-        setRevenue(revenueRes.data);
-        setOrders((ordersRes.data.items ?? []) as AdminOrderRow[]);
-      } catch (err) {
-        if (!ignore) setError(getErrorMessage(err));
-      } finally {
-        if (!ignore) setLoading(false);
+      setErrors([]);
+
+      const year = new Date().getFullYear();
+      const [overviewRes, revenueRes, ordersRes] = await Promise.allSettled([
+        adminStatisticsApi.overview(),
+        adminStatisticsApi.revenue({
+          groupBy: 'month',
+          from: `${year}-01-01`,
+          to: `${year}-12-31`,
+        }),
+        adminOrderApi.list({ page: 1, limit: 5 }),
+      ]);
+
+      if (ignore) return;
+
+      const nextErrors: string[] = [];
+
+      if (overviewRes.status === 'fulfilled') {
+        setOverview(overviewRes.value.data);
+      } else {
+        setOverview(null);
+        nextErrors.push(`Tổng quan: ${getErrorMessage(overviewRes.reason)}`);
       }
+
+      if (revenueRes.status === 'fulfilled') {
+        setRevenue(revenueRes.value.data);
+      } else {
+        setRevenue(null);
+        nextErrors.push(`Doanh thu: ${getErrorMessage(revenueRes.reason)}`);
+      }
+
+      if (ordersRes.status === 'fulfilled') {
+        setOrders((ordersRes.value.data.items ?? []).map(normalizeAdminOrder));
+      } else {
+        setOrders([]);
+        nextErrors.push(`Đơn mới: ${getErrorMessage(ordersRes.reason)}`);
+      }
+
+      setErrors(nextErrors);
+      setLoading(false);
     }
 
     loadDashboard();
@@ -149,7 +194,8 @@ export default function DashboardPage() {
   }, []);
 
   const chartValues = useMemo(() => {
-    if (!revenue?.items?.length) return FALLBACK_REVENUE;
+    if (!revenue) return FALLBACK_REVENUE;
+    if (!revenue.items.length) return MONTH_LABELS.map(() => 0);
 
     const byMonth = new Map<number, number>();
     revenue.items.forEach((item) => {
@@ -159,17 +205,22 @@ export default function DashboardPage() {
     return MONTH_LABELS.map((_, index) => byMonth.get(index) ?? 0);
   }, [revenue]);
 
-  const maxRevenue = Math.max(...chartValues, 1);
+  const dashboardOverview = overview ?? FALLBACK_OVERVIEW;
+  const usingOverviewFallback = !overview;
+  const usingRevenueFallback = !revenue;
+  const usingOrdersFallback = orders.length === 0 && errors.some((item) => item.startsWith('Đơn mới:'));
+  const maxRevenue = Math.max(...chartValues, 0);
   const displayedOrders = orders.length ? orders : FALLBACK_ORDERS;
-  const orderTotal = overview?.orders_by_status.reduce((sum, item) => sum + item.count, 0) ?? 0;
+  const orderTotal = dashboardOverview.orders_by_status.reduce((sum, item) => sum + item.count, 0);
 
   const statusRows = Object.entries(STATUS_META).map(([status, meta]) => {
-    const count = overview?.orders_by_status.find((item) => item.status === status)?.count ?? 0;
+    const count = dashboardOverview.orders_by_status.find((item) => item.status === status)?.count ?? 0;
     const percent = orderTotal > 0 ? Math.round((count / orderTotal) * 100) : 0;
     return {
       status,
       ...meta,
-      percent: orderTotal > 0 ? percent : { pending: 18, paid: 42, shipped: 25, cancelled: 8, simulated_success: 7 }[status] ?? 0,
+      count,
+      percent,
     };
   });
 
@@ -187,7 +238,7 @@ export default function DashboardPage() {
     {
       title: 'Tổng tiền',
       dataIndex: 'total',
-      render: (value: number) => <span className="admin-money">{formatVND(value)}</span>,
+      render: (value: number | string) => <span className="admin-money">{formatVND(value)}</span>,
     },
     {
       title: 'Trạng thái',
@@ -209,34 +260,38 @@ export default function DashboardPage() {
 
   return (
     <div className="admin-dashboard">
-      {error && <div className="admin-dashboard-note">Đang hiển thị dữ liệu mẫu: {error}</div>}
+      {errors.length > 0 && (
+        <div className="admin-dashboard-note">
+          Một phần dữ liệu đang dùng mẫu: {errors.join(' | ')}
+        </div>
+      )}
 
       <div className="admin-stat-grid">
         <StatCard
           label="Tổng đơn hàng"
-          value={String(overview?.total_orders ?? 1240)}
-          trend="+12%"
+          value={dashboardOverview.total_orders.toLocaleString('vi-VN')}
+          subtext={usingOverviewFallback ? 'Dữ liệu mẫu' : `${orderTotal.toLocaleString('vi-VN')} đơn có trạng thái`}
           tone="blue"
           icon={<ProfileOutlined />}
         />
         <StatCard
           label="Doanh thu"
-          value={compactRevenue(overview?.total_revenue ?? 2_450_000_000)}
-          trend="+8,5%"
+          value={compactRevenue(dashboardOverview.total_revenue)}
+          subtext={usingOverviewFallback ? 'Dữ liệu mẫu' : 'Từ thanh toán thành công'}
           tone="green"
           icon={<DollarOutlined />}
         />
         <StatCard
           label="Số sản phẩm"
-          value={String(overview?.total_products ?? 18)}
-          trend="+3"
+          value={dashboardOverview.total_products.toLocaleString('vi-VN')}
+          subtext={usingOverviewFallback ? 'Dữ liệu mẫu' : `${dashboardOverview.active_products.toLocaleString('vi-VN')} đang bán`}
           tone="purple"
           icon={<InboxOutlined />}
         />
         <StatCard
           label="Người dùng"
-          value={(overview?.total_users ?? 8320).toLocaleString('vi-VN')}
-          trend="+21%"
+          value={dashboardOverview.total_users.toLocaleString('vi-VN')}
+          subtext={usingOverviewFallback ? 'Dữ liệu mẫu' : 'Tổng tài khoản'}
           tone="orange"
           icon={<TeamOutlined />}
         />
@@ -250,12 +305,14 @@ export default function DashboardPage() {
               <div className="admin-bar-item" key={MONTH_LABELS[index]}>
                 <div
                   className="admin-bar"
-                  style={{ height: `${Math.max(18, (value / maxRevenue) * 100)}%` }}
+                  style={{ height: maxRevenue > 0 ? `${Math.max(18, (value / maxRevenue) * 100)}%` : 0 }}
+                  title={formatVND(value)}
                 />
                 <span>{MONTH_LABELS[index]}</span>
               </div>
             ))}
           </div>
+          {usingRevenueFallback && <div className="admin-panel-hint">Biểu đồ đang dùng dữ liệu mẫu.</div>}
         </section>
 
         <section className="admin-panel admin-status-panel">
@@ -265,7 +322,9 @@ export default function DashboardPage() {
               <div className="admin-status-row" key={item.status}>
                 <div className="admin-status-label">
                   <span>{item.label}</span>
-                  <span>{item.percent}%</span>
+                  <span>
+                    {item.count.toLocaleString('vi-VN')} · {item.percent}%
+                  </span>
                 </div>
                 <div className="admin-status-track">
                   <div
@@ -281,6 +340,7 @@ export default function DashboardPage() {
 
       <section className="admin-panel admin-orders-panel">
         <h2>Đơn hàng mới nhất</h2>
+        {usingOrdersFallback && <div className="admin-panel-hint">Bảng đang dùng dữ liệu mẫu.</div>}
         {displayedOrders.length ? (
           <Table
             rowKey="id"
