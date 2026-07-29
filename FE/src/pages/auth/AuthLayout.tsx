@@ -1,7 +1,7 @@
 import { Card, Typography } from 'antd';
-import { ShoppingOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
+import Logo from '../../components/Logo';
 
 const { Title, Text } = Typography;
 
@@ -28,8 +28,11 @@ export default function AuthLayout({
     >
       <Card style={{ width: '100%', maxWidth: 420, boxShadow: '0 10px 40px rgba(0,0,0,.08)' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Link to="/" style={{ fontSize: 28, color: '#f26d21', fontWeight: 700 }}>
-            <ShoppingOutlined /> AI Shop
+          <Link
+            to="/"
+            style={{ display: 'inline-block', color: '#f26d21', fontWeight: 700 }}
+          >
+            <Logo height={56} style={{ margin: '0 auto' }} />
           </Link>
           <Title level={3} style={{ marginTop: 12, marginBottom: 4 }}>
             {title}

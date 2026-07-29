@@ -28,6 +28,7 @@ import type { MenuProps } from 'antd';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import ChatWidget from '../components/ChatWidget/ChatWidget';
+import Logo from '../components/Logo';
 
 const { Header, Content, Footer } = Layout;
 const { useBreakpoint } = Grid;
@@ -142,8 +143,10 @@ export default function UserLayout() {
           display: 'flex',
           alignItems: 'center',
           gap: isMobile ? 12 : 24,
-          background: 'linear-gradient(135deg, #f26d21 0%, #e8530e 100%)',
-          boxShadow: '0 2px 12px rgba(242, 109, 33, 0.3)',
+          // Navy đậm khớp khối logo — chất "điện tử cao cấp"; viền cam mảnh tạo điểm nhấn thương hiệu
+          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+          borderBottom: '2px solid #f26d21',
+          boxShadow: '0 2px 16px rgba(0, 0, 0, 0.28)',
           position: 'sticky',
           top: 0,
           zIndex: 10,
@@ -170,7 +173,7 @@ export default function UserLayout() {
             whiteSpace: 'nowrap',
           }}
         >
-          <ShoppingOutlined /> AI Shop
+          <Logo white height={isMobile ? 32 : 40} />
         </Link>
 
         {/* Search bar — ẩn trên mobile (chuyển vào Drawer) */}
@@ -227,10 +230,11 @@ export default function UserLayout() {
               <Button
                 icon={<UserOutlined />}
                 style={{
-                  background: '#fff',
-                  color: '#e8530e',
+                  background: 'linear-gradient(135deg, #f26d21 0%, #e8530e 100%)',
+                  color: '#fff',
                   border: 'none',
                   fontWeight: 600,
+                  boxShadow: '0 4px 12px rgba(242, 109, 33, 0.35)',
                 }}
               >
                 {isMobile ? '' : 'Tài khoản'}
@@ -248,7 +252,7 @@ export default function UserLayout() {
             onClick={() => setDrawerOpen(false)}
             style={{ color: '#001529', fontWeight: 700, fontSize: 18 }}
           >
-            <ShoppingOutlined /> AI Shop
+            <Logo height={32} />
           </Link>
         }
         placement="left"
@@ -321,7 +325,7 @@ export default function UserLayout() {
                   marginBottom: 12,
                 }}
               >
-                <ShoppingOutlined /> AI Shop
+                <Logo white height={44} />
               </div>
               <p style={{ lineHeight: 1.7, margin: 0, fontSize: 13 }}>
                 Trợ lý mua sắm đồ điện tử thông minh — laptop, điện thoại, thiết bị
@@ -358,7 +362,7 @@ export default function UserLayout() {
               <div style={{ fontSize: 13, lineHeight: 1.9 }}>
                 Hotline: <span style={{ color: '#f26d21', fontWeight: 600 }}>1900 1234</span>
                 <br />
-                Email: support@aishop.vn
+                Email: support@nextech.vn
                 <br />
                 Giờ làm việc: 8:00 – 22:00
               </div>
@@ -374,7 +378,7 @@ export default function UserLayout() {
               fontSize: 13,
             }}
           >
-            AI Shopping Assistant ©{new Date().getFullYear()} — Đồ án
+            NexTech ©{new Date().getFullYear()} — Trợ lý mua sắm đồ điện tử thông minh
           </div>
         </div>
       </Footer>

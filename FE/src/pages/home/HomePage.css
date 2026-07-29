@@ -44,11 +44,13 @@
   justify-content: center;
   overflow: hidden;
   /* Chừa khoảng trống dưới hero để thẻ "cam kết" (home-features) nổi đè vào
-     vùng cam trống, KHÔNG đè lên khối stats. */
+     vùng trống, KHÔNG đè lên khối stats. */
   padding: 48px 0 80px;
-  /* Sunset trầm sâu: cam sáng -> cam cháy -> nâu đỏ đậm.
-     Nền tối dần giúp hiệu ứng tia trắng (rings/rays) nổi rõ hơn. */
-  background: linear-gradient(135deg, #f26d21 0%, #b8380a 45%, #4a1103 100%);
+  /* Navy đậm CÙNG TONE với header + quầng sáng cam ở góc phải trên để giữ
+     hơi ấm thương hiệu. Nền tối giúp tia trắng (rings/rays) nổi rõ. */
+  background:
+    radial-gradient(ellipse 55% 70% at 80% 22%, rgba(242, 109, 33, 0.32) 0%, transparent 62%),
+    linear-gradient(135deg, #1a1a2e 0%, #16213e 52%, #0f1526 100%);
   isolation: isolate;
 }
 
@@ -145,17 +147,17 @@
   padding: 0 32px;
   border: none;
   border-radius: 999px;
-  background: #fff;
-  color: var(--accent);
+  background: linear-gradient(135deg, #f26d21 0%, #e8530e 100%);
+  color: #fff;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 26px rgba(242, 109, 33, 0.45);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 .home-hero__cta:hover {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 12px 34px rgba(242, 109, 33, 0.6);
 }
 .home-hero__cta .anticon {
   transition: transform 0.25s ease;
@@ -326,8 +328,11 @@
 .home-deal {
   border-radius: var(--radius-lg);
   padding: 24px;
-  background: linear-gradient(135deg, #fff5ee 0%, #fff0e6 100%);
-  border: 1.5px solid rgba(242, 109, 33, 0.2);
+  /* Nền trắng để card sản phẩm nổi bật; viền + thanh trên cam vẫn báo "deal" */
+  background: var(--bg-card);
+  border: 1.5px solid rgba(242, 109, 33, 0.22);
+  border-top: 3px solid var(--accent);
+  box-shadow: var(--shadow-card);
   /* Giữ watermark ngầm gọn trong khung bo góc của dải Deal */
   overflow: hidden;
 }

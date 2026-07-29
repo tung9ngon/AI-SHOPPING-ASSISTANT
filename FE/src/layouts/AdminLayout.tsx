@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
 import './AdminLayout.css';
 
 const { Header, Sider, Content } = Layout;
@@ -69,9 +70,8 @@ export default function AdminLayout() {
     <Layout className="admin-shell">
       <Sider width={240} className="admin-sidebar">
         <Link to="/admin" className="admin-brand">
-          <ShoppingOutlined className="admin-brand-icon" />
-          <span>AI Shop</span>
-          <Tag color="blue" className="admin-brand-tag">
+          <Logo white height={34} />
+          <Tag className="admin-brand-tag" bordered={false}>
             Admin
           </Tag>
         </Link>

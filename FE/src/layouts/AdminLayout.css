@@ -7,7 +7,9 @@
   position: sticky;
   top: 0;
   height: 100vh;
-  background: #061a2b !important;
+  /* Navy đậm khớp khối logo NexTech (thay xanh dương lạc tông cũ) */
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
   overflow: auto;
 }
 
@@ -20,6 +22,7 @@
   color: #ffffff;
   font-size: 20px;
   font-weight: 800;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .admin-brand:hover {
@@ -27,7 +30,7 @@
 }
 
 .admin-brand-icon {
-  color: #1f7aff;
+  color: #f26d21;
   font-size: 20px;
 }
 
@@ -37,6 +40,11 @@
   border-radius: 5px;
   font-size: 11px;
   line-height: 19px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #fff;
+  /* Chip cam đặc — nhận diện thương hiệu thay preset xanh của AntD */
+  background: linear-gradient(135deg, #f26d21 0%, #e8530e 100%);
 }
 
 .admin-menu {
@@ -46,11 +54,14 @@
 
 .admin-menu .ant-menu-item {
   width: 100%;
-  height: 42px;
-  margin: 0;
+  height: 44px;
+  margin: 4px 0;
   padding-left: 22px !important;
   border-radius: 0;
+  /* Thanh dọc cam bên trái xuất hiện khi active — rõ mà tinh tế */
+  border-left: 3px solid transparent;
   color: rgba(255, 255, 255, 0.68);
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
 .admin-menu .ant-menu-item a {
@@ -58,8 +69,13 @@
 }
 
 .admin-menu .ant-menu-item-selected {
-  background: #1677ff !important;
+  background: rgba(242, 109, 33, 0.16) !important;
+  border-left-color: #f26d21;
   color: #ffffff !important;
+}
+
+.admin-menu .ant-menu-item-selected .anticon {
+  color: #f26d21;
 }
 
 .admin-menu .ant-menu-item:not(.ant-menu-item-selected):hover {
@@ -83,10 +99,22 @@
 }
 
 .admin-header h1 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin: 0;
-  color: #24272d;
+  color: #1a1a2e;
   font-size: 20px;
   font-weight: 800;
+}
+
+/* Vạch cam dọc trước tiêu đề — đồng bộ điểm nhấn thương hiệu */
+.admin-header h1::before {
+  content: '';
+  width: 4px;
+  height: 22px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #f26d21, #e8530e);
 }
 
 .admin-header-actions {
@@ -96,7 +124,7 @@
 }
 
 .admin-avatar {
-  background: #1677ff;
+  background: linear-gradient(135deg, #f26d21 0%, #e8530e 100%);
   font-weight: 700;
 }
 

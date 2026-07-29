@@ -6,12 +6,15 @@
   --accent-dark: #e8530e;
   --accent-light: #fff3eb;
   --price-red: #d0021b;
-  --bg-page: #f5f5fa;
+  /* Nền trắng-trung tính rất sáng: card sản phẩm (trắng) nổi bật rõ nhờ
+     tương phản nhẹ + shadow, không bị ám tím như tông cũ. */
+  --bg-page: #f7f8fa;
   --bg-card: #ffffff;
   --text-primary: #1a1a2e;
   --text-secondary: #6b7280;
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-card-hover: 0 12px 32px rgba(0, 0, 0, 0.12);
+  /* Bóng 2 lớp mềm — card trắng "nổi khối" trên nền trắng mà vẫn tinh tế */
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.06), 0 6px 16px rgba(16, 24, 40, 0.06);
+  --shadow-card-hover: 0 14px 34px rgba(16, 24, 40, 0.16);
   --radius-card: 12px;
   --radius-lg: 16px;
 }
@@ -76,32 +79,11 @@ body {
   border-radius: var(--radius-card);
 }
 
-/* ===================== WATERMARK LOGO NGẦM =====================
-   Rải logo AI Shop rất mờ phía sau một khối để card sản phẩm (nền trắng)
-   nổi bật lên. Dùng: thêm class .brand-bg cho phần tử bọc.
-   Watermark nằm ở lớp ::before (z-index -1) nên luôn phía sau nội dung. */
+/* ===================== NỀN SẠCH (đã bỏ watermark) =====================
+   Trước đây rải chữ "AI SHOP" (tên cũ) rất mờ phía sau nội dung. Đã GỠ BỎ
+   để nền trắng phẳng, giúp card sản phẩm nổi bật hơn. Vẫn giữ lại .brand-bg
+   (tạo stacking context + position) để layout & badge giảm giá không đổi. */
 .brand-bg {
   position: relative;
   isolation: isolate;
-}
-.brand-bg::before {
-  content: '';
-  position: absolute;
-  /* Trùng khít khung — KHÔNG transform/tràn ra ngoài để không sinh
-     vùng trắng thừa + scroll dư. Độ nghiêng của hoạ tiết bake sẵn trong SVG. */
-  inset: 0;
-  z-index: -1;
-  background-image: url('./assets/brand-watermark.svg');
-  background-repeat: repeat;
-  background-size: 300px 220px;
-  opacity: 0.05;               /* rất mờ — chỉ thoáng thấy */
-  pointer-events: none;
-  /* mờ dần ở mép trên/dưới cho tự nhiên */
-  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 14%, #000 86%, transparent 100%);
-  mask-image: linear-gradient(180deg, transparent 0, #000 14%, #000 86%, transparent 100%);
-}
-
-/* Biến thể đậm hơn một chút cho khối có nền màu (vd dải Deal) */
-.brand-bg--soft::before {
-  opacity: 0.07;
 }
