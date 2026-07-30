@@ -95,6 +95,27 @@
   z-index: 0;
 }
 
+/* Trống đồng Đông Sơn quay ở giữa tâm */
+.home-hero__drum {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 540px;
+  height: 540px;
+  transform: translate(-50%, -50%);
+  color: #f0b46a; /* đồng vàng */
+  opacity: 0.34;
+  animation: hero-spin 60s linear infinite;
+  z-index: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 0 20px rgba(242, 109, 33, 0.28));
+}
+.home-hero__drum svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 /* Bỏ globe và core — không phù hợp phong cách sáng */
 .home-hero__globe,
 .home-hero__core {
@@ -579,6 +600,11 @@
     /* Mobile: features nằm hẳn dưới hero (margin dương) nên không cần chừa
        nhiều khoảng trống đáy như desktop. */
     padding: 32px 0 40px;
+  }
+  .home-hero__drum {
+    width: 340px;
+    height: 340px;
+    opacity: 0.28;
   }
   .home-features {
     grid-template-columns: repeat(2, 1fr);
