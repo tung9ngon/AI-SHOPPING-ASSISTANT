@@ -20,7 +20,7 @@ import { formatDate, formatVND, ORDER_STATUS_COLOR, ORDER_STATUS_LABEL } from '.
 import './OrderListPage.css';
 
 const { Text } = Typography;
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 
 interface AdminOrderRow {
   id: string;
@@ -62,13 +62,21 @@ interface AdminOrderDetail {
   created_at: string;
 }
 
-const STATUS_OPTIONS: { label: string; value: OrderStatus | 'all' }[] = [
+const FILTER_STATUS_OPTIONS: { label: string; value: OrderStatus | 'all' }[] = [
   { label: 'Tất cả trạng thái', value: 'all' },
   { label: 'Chờ xử lý', value: 'pending' },
   { label: 'Đã thanh toán', value: 'paid' },
   { label: 'Đang giao', value: 'shipped' },
   { label: 'Đã huỷ', value: 'cancelled' },
   { label: 'Hoàn tất', value: 'simulated_success' },
+];
+
+const EDITABLE_STATUS_OPTIONS: { label: string; value: OrderStatus; color: string }[] = [
+  { label: 'Chờ xử lý', value: 'pending', color: ORDER_STATUS_COLOR.pending },
+  { label: 'Đã thanh toán', value: 'paid', color: ORDER_STATUS_COLOR.paid },
+  { label: 'Đang giao', value: 'shipped', color: ORDER_STATUS_COLOR.shipped },
+  { label: 'Hoàn tất', value: 'simulated_success', color: ORDER_STATUS_COLOR.simulated_success },
+  { label: 'Đã huỷ', value: 'cancelled', color: ORDER_STATUS_COLOR.cancelled },
 ];
 
 const SAMPLE_ORDERS: AdminOrderRow[] = [
@@ -128,15 +136,18 @@ function OrderDetailModal({
   open,
   onClose,
   sampleMode,
+  onStatusChange,
 }: {
   orderId: string | null;
   open: boolean;
   onClose: () => void;
   sampleMode: boolean;
+  onStatusChange: (id: string, newStatus: OrderStatus) => Promise<void>;
 }) {
   const { message } = App.useApp();
   const [detail, setDetail] = useState<AdminOrderDetail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     if (!open || !orderId || sampleMode) return;
@@ -184,6 +195,19 @@ function OrderDetailModal({
 
   const order = sampleMode ? sampleDetail : detail;
 
+  const handleModalStatusChange = async (newStatus: OrderStatus) => {
+    if (!orderId) return;
+    setUpdating(true);
+    try {
+      await onStatusChange(orderId, newStatus);
+      if (detail) {
+        setDetail({ ...detail, status: newStatus });
+      }
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   return (
     <Modal
       open={open}
@@ -203,9 +227,16 @@ function OrderDetailModal({
             <Descriptions.Item label="Số điện thoại">{order.user?.phone_number ?? '-'}</Descriptions.Item>
             <Descriptions.Item label="Ngày đặt">{formatDate(order.created_at)}</Descriptions.Item>
             <Descriptions.Item label="Trạng thái">
-              <Tag color={ORDER_STATUS_COLOR[order.status]}>
-                {ORDER_STATUS_LABEL[order.status] ?? order.status}
-              </Tag>
+              <Select
+                value={order.status}
+                loading={updating}
+                onChange={handleModalStatusChange}
+                style={{ width: 170 }}
+                options={EDITABLE_STATUS_OPTIONS.map((opt) => ({
+                  value: opt.value,
+                  label: <Tag color={opt.color} style={{ margin: 0 }}>{opt.label}</Tag>,
+                }))}
+              />
             </Descriptions.Item>
             <Descriptions.Item label="Thanh toán">{order.payment?.status ?? '-'}</Descriptions.Item>
           </Descriptions>
@@ -272,6 +303,7 @@ export default function OrderListPage() {
   const [fallbackReason, setFallbackReason] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
 
   const isSampleMode = !!fallbackReason;
 
@@ -335,6 +367,28 @@ export default function OrderListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
+  const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
+    setUpdatingStatusId(orderId);
+    try {
+      await adminOrderApi.updateStatus(orderId, newStatus);
+      message.success(`Đã cập nhật trạng thái đơn hàng sang "${ORDER_STATUS_LABEL[newStatus] ?? newStatus}"`);
+      setItems((prev) =>
+        prev.map((item) => (item.id === orderId ? { ...item, status: newStatus } : item)),
+      );
+    } catch (err) {
+      if (isSampleMode || orderId.startsWith('sample-') || orderId.length <= 8) {
+        setItems((prev) =>
+          prev.map((item) => (item.id === orderId ? { ...item, status: newStatus } : item)),
+        );
+        message.success(`Đã cập nhật trạng thái đơn hàng (chế độ dữ liệu mẫu)`);
+      } else {
+        message.error(getErrorMessage(err));
+      }
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
+
   const openDetail = (id: string) => {
     setSelectedOrderId(id);
     setDetailOpen(true);
@@ -360,32 +414,41 @@ export default function OrderListPage() {
     {
       title: 'Số SP',
       dataIndex: 'product_count',
-      width: 100,
+      width: 80,
     },
     {
       title: 'Tổng tiền',
       dataIndex: 'total',
-      width: 200,
+      width: 180,
       render: (value: number | string) => <span className="admin-order-money">{formatVND(value)}</span>,
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
-      width: 180,
-      render: (value: OrderStatus) => (
-        <Tag color={ORDER_STATUS_COLOR[value]}>{ORDER_STATUS_LABEL[value] ?? value}</Tag>
+      width: 190,
+      render: (value: OrderStatus, record) => (
+        <Select
+          value={value}
+          loading={updatingStatusId === record.id}
+          onChange={(newVal) => handleUpdateStatus(record.id, newVal)}
+          className="admin-order-status-select"
+          options={EDITABLE_STATUS_OPTIONS.map((opt) => ({
+            value: opt.value,
+            label: <Tag color={opt.color} style={{ margin: 0 }}>{opt.label}</Tag>,
+          }))}
+        />
       ),
     },
     {
       title: 'Ngày đặt',
       dataIndex: 'created_at',
-      width: 210,
+      width: 190,
       render: (value: string) => <span className="admin-order-date">{formatDate(value)}</span>,
     },
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 120,
+      width: 100,
       align: 'right',
       render: (_, record) => (
         <Button type="link" icon={<EyeOutlined />} onClick={() => openDetail(record.id)}>
@@ -428,7 +491,7 @@ export default function OrderListPage() {
             setPage(1);
           }}
           className="admin-order-status"
-          options={STATUS_OPTIONS}
+          options={FILTER_STATUS_OPTIONS}
         />
       </div>
 
@@ -453,6 +516,7 @@ export default function OrderListPage() {
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         sampleMode={isSampleMode}
+        onStatusChange={handleUpdateStatus}
       />
     </div>
   );

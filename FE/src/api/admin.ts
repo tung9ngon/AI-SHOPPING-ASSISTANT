@@ -61,8 +61,41 @@ export const adminProductApi = {
 
   addImage: (
     id: string,
-    data: { image_url: string; is_primary?: boolean; sort_order?: number },
-  ) => api.post(`/admin/products/${id}/images`, data),
+    payload: { file: File; is_primary?: boolean; sort_order?: number },
+  ) => {
+    const formData = new FormData();
+    formData.append('file', payload.file);
+    if (payload.is_primary !== undefined) {
+      formData.append('is_primary', String(payload.is_primary));
+    }
+    if (payload.sort_order !== undefined) {
+      formData.append('sort_order', String(payload.sort_order));
+    }
+    return api.post<{ id: string; image_url: string; is_primary: boolean; sort_order: number }>(
+      `/admin/products/${id}/images`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+  },
+  updateImage: (
+    id: string,
+    imageId: string,
+    payload: { file?: File; is_primary?: boolean; sort_order?: number },
+  ) => {
+    const formData = new FormData();
+    if (payload.file) formData.append('file', payload.file);
+    if (payload.is_primary !== undefined) {
+      formData.append('is_primary', String(payload.is_primary));
+    }
+    if (payload.sort_order !== undefined) {
+      formData.append('sort_order', String(payload.sort_order));
+    }
+    return api.put<{ id: string; image_url: string; is_primary: boolean; sort_order: number }>(
+      `/admin/products/${id}/images/${imageId}`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+  },
   removeImage: (id: string, imageId: string) =>
     api.delete(`/admin/products/${id}/images/${imageId}`),
 

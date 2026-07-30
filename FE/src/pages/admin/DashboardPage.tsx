@@ -61,6 +61,7 @@ const FALLBACK_ORDERS: AdminOrderRow[] = [
   {
     id: 'A1B2C3D4',
     user_name: 'Nguyễn Văn A',
+    product_count: 2,
     total: 64980000,
     status: 'paid',
     created_at: '2026-07-24T10:24:00',
@@ -68,6 +69,7 @@ const FALLBACK_ORDERS: AdminOrderRow[] = [
   {
     id: 'E5F6G7H8',
     user_name: 'Trần Thị B',
+    product_count: 1,
     total: 7990000,
     status: 'pending',
     created_at: '2026-07-24T09:10:00',
@@ -75,6 +77,7 @@ const FALLBACK_ORDERS: AdminOrderRow[] = [
   {
     id: 'I9J0K1L2',
     user_name: 'Lê Văn C',
+    product_count: 3,
     total: 47280000,
     status: 'shipped',
     created_at: '2026-07-23T16:45:00',
@@ -82,6 +85,7 @@ const FALLBACK_ORDERS: AdminOrderRow[] = [
   {
     id: 'M3N4O5P6',
     user_name: 'Phạm Thị D',
+    product_count: 1,
     total: 2490000,
     status: 'cancelled',
     created_at: '2026-07-23T11:02:00',
@@ -89,6 +93,7 @@ const FALLBACK_ORDERS: AdminOrderRow[] = [
   {
     id: 'Q7R8S9T0',
     user_name: 'Đỗ Văn E',
+    product_count: 2,
     total: 34480000,
     status: 'paid',
     created_at: '2026-07-22T14:30:00',

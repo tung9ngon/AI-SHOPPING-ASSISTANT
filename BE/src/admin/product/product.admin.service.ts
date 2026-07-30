@@ -161,10 +161,22 @@ export class AdminProductService {
 
   // DELETE /api/admin/products/:id
   async remove(id: string) {
-    const product = await this.findProductOrFail(id);
-    product.is_active = false;
-    await this.productRepo.save(product);
-    return { message: 'Đã ẩn sản phẩm' };
+    const product = await this.productRepo.findOne({
+      where: { id },
+      relations: { images: true },
+    });
+    if (!product) throw new NotFoundException('Không tìm thấy sản phẩm');
+
+    if (product.images?.length) {
+      for (const img of product.images) {
+        if (img.public_id) {
+          await this.cloudinaryService.deleteImage(img.public_id);
+        }
+      }
+    }
+
+    await this.productRepo.remove(product);
+    return { message: 'Đã xoá sản phẩm thành công' };
   }
 
 

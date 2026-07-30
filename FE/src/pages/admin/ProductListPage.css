@@ -131,6 +131,118 @@
   padding-top: 8px;
 }
 
+/* Modal styling cho Quản lý sản phẩm */
+.admin-product-modal .ant-modal-body {
+  padding-top: 4px;
+}
+
+/* Tab Quản lý Ảnh */
+.admin-product-images-tab {
+  padding-top: 8px;
+}
+
+.admin-product-image-upload-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-product-url-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.admin-image-card {
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+
+  &.is-primary {
+    border-color: #ff6a00;
+    box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.2);
+  }
+}
+
+.admin-image-preview-wrapper {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  background: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.admin-image-preview {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.admin-primary-tag {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  margin: 0;
+  font-size: 11px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.admin-image-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+/* Tab Quản lý Thông số kỹ thuật */
+.admin-product-specs-tab {
+  padding-top: 8px;
+}
+
+.admin-specs-presets {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+.admin-specs-presets-title {
+  font-size: 12px;
+  color: #666;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.admin-specs-toolbar {
+  margin-bottom: 16px;
+}
+
+.admin-specs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-specs-header {
+  font-size: 12px;
+  font-weight: 700;
+  color: #888;
+  padding: 0 4px 4px 4px;
+}
+
+.admin-spec-row {
+  align-items: center;
+}
+
 @media (max-width: 980px) {
   .admin-product-toolbar,
   .admin-product-filters {
@@ -142,5 +254,10 @@
   .admin-product-select,
   .admin-product-toolbar .ant-btn {
     width: 100%;
+  }
+
+  .admin-product-image-upload-bar {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
