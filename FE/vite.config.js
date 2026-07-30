@@ -14,4 +14,17 @@ export default defineConfig({
             },
         },
     },
+    build: {
+        // Tách vendor thành chunk riêng để cache lâu dài: khi code app đổi, trình duyệt
+        // vẫn giữ cache react/antd (không phải tải lại thư viện nặng).
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+                    antd: ['antd', '@ant-design/icons'],
+                },
+            },
+        },
+        chunkSizeWarningLimit: 900,
+    },
 });

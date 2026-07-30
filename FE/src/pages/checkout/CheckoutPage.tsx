@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import {
   App,
   Button,
@@ -43,6 +44,7 @@ const SHIPPING_FEE = 30_000;
 const FREE_SHIPPING_THRESHOLD = 500_000;
 
 export default function CheckoutPage() {
+  useDocumentTitle('Thanh toán');
   const { cart, initialized, refresh } = useCart();
   const { message } = App.useApp();
   const navigate = useNavigate();
@@ -351,7 +353,16 @@ export default function CheckoutPage() {
           <Card title="Tóm tắt đơn hàng">
             {/* Voucher (kiểu Shopee): mở popup chọn mã */}
             <div
+              role="button"
+              tabIndex={0}
+              aria-label="Chọn hoặc nhập mã voucher"
               onClick={() => setVoucherOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setVoucherOpen(true);
+                }
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',

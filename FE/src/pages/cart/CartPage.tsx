@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import {
   App,
   Button,
@@ -28,6 +29,7 @@ import { formatVND } from '../../utils/format';
 const { Title, Text } = Typography;
 
 export default function CartPage() {
+  useDocumentTitle('Giỏ hàng');
   const { cart, loading, refresh, itemCount, fetchError } = useCart();
   const { message } = App.useApp();
   const navigate = useNavigate();

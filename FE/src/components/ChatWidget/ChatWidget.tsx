@@ -21,20 +21,48 @@ const SUGGESTIONS = ['Laptop cho sinh viên', 'Điện thoại dưới 10 triệ
 const WELCOME =
   'Xin chào 👋 Mình là trợ lý AI của NexTech. Bạn đang tìm sản phẩm gì? Mình có thể tư vấn laptop, điện thoại, đồng hồ... theo nhu cầu và ngân sách của bạn.';
 
+// Lưu hội thoại trong phiên để không mất khi F5 (chỉ sessionStorage — đóng tab là xoá).
+const CHAT_STORAGE_KEY = 'nextech_chat_messages';
+const WELCOME_MESSAGES: Message[] = [{ role: 'bot', type: 'text', text: WELCOME }];
+
+function loadMessages(): Message[] {
+  try {
+    const raw = sessionStorage.getItem(CHAT_STORAGE_KEY);
+    if (!raw) return WELCOME_MESSAGES;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? (parsed as Message[]) : WELCOME_MESSAGES;
+  } catch {
+    return WELCOME_MESSAGES;
+  }
+}
+
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'bot', type: 'text', text: WELCOME },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(loadMessages);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   // Tự cuộn xuống cuối khi có tin nhắn mới
   useEffect(() => {
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, typing, open]);
+
+  // Lưu lại hội thoại mỗi khi đổi.
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+    } catch {
+      /* bỏ qua nếu storage đầy/bị chặn */
+    }
+  }, [messages]);
+
+  // Focus ô nhập khi mở panel.
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
 
   const send = async (raw?: string) => {
     const text = (raw ?? input).trim();
@@ -149,6 +177,7 @@ export default function ChatWidget() {
 
           <div className="chat-input">
             <input
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && send()}

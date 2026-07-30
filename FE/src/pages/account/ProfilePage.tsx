@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import {
   App,
   Avatar,
@@ -475,6 +476,7 @@ function PreferencesTab() {
 
 // ================= Trang chính =================
 export default function ProfilePage() {
+  useDocumentTitle('Tài khoản của tôi');
   return (
     <div>
       <Title level={3} style={{ marginBottom: 16 }}>

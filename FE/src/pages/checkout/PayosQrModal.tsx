@@ -6,10 +6,15 @@ import { formatVND } from '../../utils/format';
 
 const { Text, Paragraph } = Typography;
 
-// Key sessionStorage: lưu payment id trước khi mở link PayOS ngoài trang, để
+// Key localStorage: lưu payment id trước khi mở link PayOS ngoài trang, để
 // /payment/payos-callback đọc lại và gọi GET /payments/:id/status xác nhận thật
-// (query string PayOS trả về không có payment id nội bộ, có thể bị giả mạo).
+// (query string PayOS trả về có thể bị giả mạo). Dùng localStorage thay vì
+// sessionStorage vì PayOS mở link ở TAB MỚI rồi redirect về — sessionStorage
+// không chia sẻ giữa các tab, còn localStorage thì có.
 export const PAYOS_PENDING_PAYMENT_KEY = 'payos_pending_payment_id';
+
+const POLL_INTERVAL_MS = 3000;
+const SUCCESS_DELAY_MS = 900; // cho người dùng thấy trạng thái thành công trước khi đóng modal
 
 // Hiển thị mã QR PayOS (VietQR) + tự động kiểm tra trạng thái thanh toán (poll).
 // Khi webhook PayOS xác nhận thành công, GET /payments/:id/status trả 'success'.
@@ -34,17 +39,24 @@ export default function PayosQrModal({
   const [checking, setChecking] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const successTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Chốt kết quả: đảm bảo onSuccess chỉ chạy ĐÚNG MỘT LẦN dù poll tự động và nút
+  // "Kiểm tra ngay" cùng trả 'success' gần như đồng thời (state async không kịp phản ánh).
+  const settled = useRef(false);
 
   const check = async (silent = true) => {
+    if (settled.current) return;
     if (!silent) setChecking(true);
     try {
       const res = await paymentApi.status(paymentId);
+      if (settled.current) return;
       if (res.data.status === 'success') {
+        settled.current = true;
         setStatus('success');
         if (timer.current) clearInterval(timer.current);
-        // cho người dùng thấy trạng thái thành công trước khi đóng modal
-        successTimeout.current = setTimeout(onSuccess, 900);
+        if (successTimeout.current) clearTimeout(successTimeout.current);
+        successTimeout.current = setTimeout(onSuccess, SUCCESS_DELAY_MS);
       } else if (res.data.status === 'failed') {
+        settled.current = true;
         setStatus('failed');
         if (timer.current) clearInterval(timer.current);
       }
@@ -57,9 +69,10 @@ export default function PayosQrModal({
 
   useEffect(() => {
     if (!open) return;
+    settled.current = false;
     setStatus('pending');
-    // Poll mỗi 3 giây trong lúc modal mở.
-    timer.current = setInterval(() => check(true), 3000);
+    // Poll trong lúc modal mở.
+    timer.current = setInterval(() => check(true), POLL_INTERVAL_MS);
     return () => {
       if (timer.current) clearInterval(timer.current);
       if (successTimeout.current) clearTimeout(successTimeout.current);
@@ -115,7 +128,7 @@ export default function PayosQrModal({
                     icon={<ExportOutlined />}
                     onClick={() => {
                       // Lưu lại để trang callback xác nhận thật với BE sau khi PayOS redirect về.
-                      sessionStorage.setItem(PAYOS_PENDING_PAYMENT_KEY, paymentId);
+                      localStorage.setItem(PAYOS_PENDING_PAYMENT_KEY, paymentId);
                       window.open(paymentUrl, '_blank');
                     }}
                   >
