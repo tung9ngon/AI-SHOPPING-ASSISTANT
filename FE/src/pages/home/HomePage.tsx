@@ -52,6 +52,100 @@ function DealCountdown() {
   );
 }
 
+// Mặt trống đồng Đông Sơn cách điệu: mặt trời 14 tia ở tâm, các vành hoa văn
+// và một vành chim Lạc bay — dùng làm hoạ tiết quay ở giữa hero.
+function DongSonDrum() {
+  const C = 220; // tâm
+
+  // Ngôi sao (mặt trời) nhiều cánh ở tâm.
+  const star = (points: number, outerR: number, innerR: number) => {
+    let d = '';
+    for (let i = 0; i < points * 2; i++) {
+      const r = i % 2 === 0 ? outerR : innerR;
+      const a = (Math.PI / points) * i - Math.PI / 2;
+      const x = C + r * Math.cos(a);
+      const y = C + r * Math.sin(a);
+      d += `${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)} `;
+    }
+    return d + 'Z';
+  };
+
+  // Một con chim Lạc cách điệu, hướng bay sang trái (theo chiều kim đồng hồ ngược).
+  const bird = (
+    <g fill="currentColor">
+      <polygon points="-25,-9 -13,-4 -14,-2" /> {/* mỏ */}
+      <circle cx="-12" cy="-4" r="2.4" /> {/* đầu */}
+      <ellipse cx="0" cy="0" rx="9" ry="3.4" /> {/* thân */}
+      <polygon points="-3,-2 5,-18 10,-2" /> {/* cánh */}
+      <polygon points="7,-1 19,1 7,2.5" /> {/* đuôi */}
+      <path d="M3 3 L7 12 M6 3 L11 11" stroke="currentColor" strokeWidth="1.4" fill="none" />
+    </g>
+  );
+
+  const birdCount = 16;
+  const birdRadius = 150;
+  const dotCount = 40;
+  const dotRadius = 108;
+
+  return (
+    <div className="home-hero__drum" aria-hidden="true">
+      <svg viewBox="0 0 440 440">
+        {/* Các vành trơn */}
+        <circle cx={C} cy={C} r="205" fill="none" stroke="currentColor" strokeWidth="2" />
+        <circle cx={C} cy={C} r="196" fill="none" stroke="currentColor" strokeWidth="1" />
+        <circle cx={C} cy={C} r="130" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx={C} cy={C} r="86" fill="none" stroke="currentColor" strokeWidth="1.5" />
+
+        {/* Vành chim Lạc bay */}
+        {Array.from({ length: birdCount }).map((_, i) => (
+          <g
+            key={`b${i}`}
+            transform={`rotate(${(360 / birdCount) * i} ${C} ${C}) translate(${C} ${C - birdRadius})`}
+          >
+            {bird}
+          </g>
+        ))}
+
+        {/* Vành chấm tròn */}
+        {Array.from({ length: dotCount }).map((_, i) => {
+          const a = ((Math.PI * 2) / dotCount) * i;
+          return (
+            <circle
+              key={`d${i}`}
+              cx={C + dotRadius * Math.cos(a)}
+              cy={C + dotRadius * Math.sin(a)}
+              r="2.6"
+              fill="currentColor"
+            />
+          );
+        })}
+
+        {/* Vành tia ngắn quanh mặt trời */}
+        {Array.from({ length: 28 }).map((_, i) => {
+          const a = ((Math.PI * 2) / 28) * i;
+          const r1 = 60;
+          const r2 = 78;
+          return (
+            <line
+              key={`r${i}`}
+              x1={C + r1 * Math.cos(a)}
+              y1={C + r1 * Math.sin(a)}
+              x2={C + r2 * Math.cos(a)}
+              y2={C + r2 * Math.sin(a)}
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+          );
+        })}
+
+        {/* Mặt trời 14 tia ở tâm */}
+        <path d={star(14, 54, 20)} fill="currentColor" />
+        <circle cx={C} cy={C} r="12" fill="none" stroke="#1a1a2e" strokeWidth="2.5" />
+      </svg>
+    </div>
+  );
+}
+
 const FEATURES = [
   { icon: <ThunderboltOutlined />, title: 'Giao hàng hoả tốc', desc: 'Nội thành 2 giờ' },
   { icon: <SafetyCertificateOutlined />, title: 'Chính hãng 100%', desc: 'Bảo hành toàn quốc' },
@@ -99,6 +193,7 @@ export default function HomePage() {
       <section className="home-hero">
         <div className="home-hero__rings" />
         <div className="home-hero__rays" />
+        <DongSonDrum />
 
         <div className="home-hero__content">
           <p className="home-hero__eyebrow">Trợ lý mua sắm đồ điện tử</p>
