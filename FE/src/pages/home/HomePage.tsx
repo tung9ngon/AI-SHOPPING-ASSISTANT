@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Col, Empty, Row, Skeleton, Card } from 'antd';
+import { useCallback, useEffect, useState } from 'react';
+import { Alert, Button, Col, Empty, Row, Skeleton, Card } from 'antd';
 import {
   ArrowRightOutlined,
   AppstoreOutlined,
@@ -159,10 +159,15 @@ export default function HomePage() {
   const [deals, setDeals] = useState<ProductListItem[]>([]);
   const [brands, setBrands] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  // Phân biệt lỗi mạng với "shop chưa có dữ liệu" — tránh hiện "Chưa có sản phẩm" giả khi mất mạng.
+  const [error, setError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
     let ignore = false;
+    setLoading(true);
+    setError(false);
     Promise.all([
       categoryApi.list(),
       productApi.list({ sort: 'newest', limit: 10 }),
@@ -177,7 +182,8 @@ export default function HomePage() {
         setBrands(brandRes.data);
       })
       .catch(() => {
-        // Lỗi mạng/server: giữ các mảng rỗng, các khu vực sẽ tự ẩn/hiện "Chưa có dữ liệu".
+        if (ignore) return;
+        setError(true);
       })
       .finally(() => {
         if (!ignore) setLoading(false);
@@ -185,7 +191,9 @@ export default function HomePage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [reloadKey]);
+
+  const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
   return (
     <div className="home-root">
@@ -226,6 +234,20 @@ export default function HomePage() {
       </section>
 
       <div className="home-container brand-bg">
+        {error && (
+          <Alert
+            type="error"
+            showIcon
+            style={{ marginBottom: 20 }}
+            message="Không tải được dữ liệu trang chủ"
+            description="Có thể do mất kết nối tới máy chủ. Vui lòng thử lại."
+            action={
+              <Button size="small" danger onClick={reload}>
+                Thử lại
+              </Button>
+            }
+          />
+        )}
         {/* ===== Dải cam kết ===== */}
         <ScrollReveal>
           <div className="home-features">

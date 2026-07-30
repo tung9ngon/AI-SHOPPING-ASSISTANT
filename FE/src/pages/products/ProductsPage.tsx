@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import {
   App,
   Button,
@@ -33,6 +34,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function ProductsPage() {
+  useDocumentTitle('Sản phẩm');
   const { message } = App.useApp();
   // URL là "nguồn sự thật" của bộ lọc -> share link giữ nguyên bộ lọc,
   // và ô tìm kiếm trên header (điều hướng /products?search=...) hoạt động ngay.

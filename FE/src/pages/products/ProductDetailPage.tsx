@@ -36,6 +36,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import ProductCard from '../../components/ProductCard';
 import ReviewsSection from './ReviewsSection';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -73,6 +74,8 @@ export default function ProductDetailPage() {
   // Mặc định 'email' vì BE hiện chỉ gửi thông báo thật qua email
   const [alertChannel, setAlertChannel] = useState<NotifyChannel>('email');
   const [alertSaving, setAlertSaving] = useState(false);
+
+  useDocumentTitle(product?.name);
 
   useEffect(() => {
     if (!id) return;

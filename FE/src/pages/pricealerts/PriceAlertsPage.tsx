@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import {
   App,
   Alert,
@@ -36,6 +37,7 @@ const STATUS_TAG: Record<string, { color: string; label: string }> = {
 };
 
 export default function PriceAlertsPage() {
+  useDocumentTitle('Theo dõi giá');
   const { message } = App.useApp();
   const [items, setItems] = useState<PriceAlertItem[]>([]);
   const [loading, setLoading] = useState(true);

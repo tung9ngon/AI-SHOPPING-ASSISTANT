@@ -6,24 +6,24 @@ import { PAYOS_PENDING_PAYMENT_KEY } from './PayosQrModal';
 
 // PayOS redirect về đây (returnUrl/cancelUrl = /payment/payos-callback) kèm query:
 // ?code=00&id=...&cancel=false&status=PAID&orderCode=...
-// Query string này do PayOS tự thêm (không phải BE), nên có thể bị giả mạo bằng
-// cách gõ tay URL. Nếu có payment id đã lưu trước khi mở link PayOS
-// (xem PayosQrModal), gọi lại GET /payments/:id/status để xác nhận thật với BE
-// thay vì tin thẳng query string.
+// Query string này do PayOS tự thêm (không phải BE) và HOÀN TOÀN CÓ THỂ BỊ GIẢ MẠO
+// bằng cách gõ tay URL. Vì vậy KHÔNG BAO GIỜ tin query string để khẳng định thành công.
+// Nguồn sự thật duy nhất là GET /payments/:id/status (BE). Payment id được lưu trước
+// khi mở link PayOS (xem PayosQrModal) — dùng localStorage để bền qua việc PayOS mở
+// tab mới rồi redirect về. Không xác minh được với BE -> coi như CHƯA hoàn tất (an toàn).
 export default function PayosCallbackPage() {
   const [params] = useSearchParams();
-  const code = params.get('code');
   const status = params.get('status');
   const cancel = params.get('cancel');
 
   const [verifying, setVerifying] = useState(false);
-  // null = không xác minh được với BE (không có id đã lưu, hoặc gọi lỗi) -> dùng tạm query string
+  // null = chưa/không xác minh được với BE, true/false = kết quả thật từ BE
   const [verifiedSuccess, setVerifiedSuccess] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const paymentId = sessionStorage.getItem(PAYOS_PENDING_PAYMENT_KEY);
+    const paymentId = localStorage.getItem(PAYOS_PENDING_PAYMENT_KEY);
     if (!paymentId) return;
-    sessionStorage.removeItem(PAYOS_PENDING_PAYMENT_KEY);
+    localStorage.removeItem(PAYOS_PENDING_PAYMENT_KEY);
     setVerifying(true);
     paymentApi
       .status(paymentId)
@@ -40,8 +40,11 @@ export default function PayosCallbackPage() {
     );
   }
 
-  const isSuccess = verifiedSuccess ?? (code === '00' && status === 'PAID');
-  const isCancelled = cancel === 'true' || status === 'CANCELLED';
+  // CHỈ hiện thành công khi BE xác nhận thật (verifiedSuccess === true).
+  // Query string không bao giờ được dùng để suy ra thành công.
+  const isSuccess = verifiedSuccess === true;
+  const isCancelled =
+    !isSuccess && (cancel === 'true' || status === 'CANCELLED');
 
   if (isSuccess) {
     return (

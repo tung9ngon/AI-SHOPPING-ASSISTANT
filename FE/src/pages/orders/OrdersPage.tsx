@@ -4,6 +4,7 @@ import {
   Card,
   Empty,
   Pagination,
+  Result,
   Segmented,
   Skeleton,
   Space,
@@ -14,6 +15,7 @@ import { RightOutlined, ShoppingOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import { App } from 'antd';
 import { orderApi, type OrderListItem } from '../../api/orders';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { getErrorMessage } from '../../api/client';
 import type { OrderStatus } from '../../types';
 import {
@@ -36,16 +38,21 @@ const FILTERS: { label: string; value: OrderStatus | 'all' }[] = [
 ];
 
 export default function OrdersPage() {
+  useDocumentTitle('Đơn hàng của tôi');
   const { message } = App.useApp();
   const [status, setStatus] = useState<OrderStatus | 'all'>('all');
   const [items, setItems] = useState<OrderListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  // Phân biệt "lỗi tải" vs "thật sự chưa có đơn": lỗi mạng không được hiện như rỗng.
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let ignore = false;
     setLoading(true);
+    setFetchError(null);
     orderApi
       .list({
         status: status === 'all' ? undefined : status,
@@ -61,7 +68,7 @@ export default function OrdersPage() {
         if (ignore) return;
         setItems([]);
         setTotal(0);
-        message.error(getErrorMessage(err));
+        setFetchError(getErrorMessage(err));
       })
       .finally(() => {
         if (!ignore) setLoading(false);
@@ -69,7 +76,7 @@ export default function OrdersPage() {
     return () => {
       ignore = true;
     };
-  }, [status, page, message]);
+  }, [status, page, reloadKey, message]);
 
   return (
     <div>
@@ -91,6 +98,19 @@ export default function OrdersPage() {
 
       {loading ? (
         <Skeleton active paragraph={{ rows: 6 }} />
+      ) : fetchError ? (
+        <Card>
+          <Result
+            status="warning"
+            title="Không tải được đơn hàng"
+            subTitle={fetchError}
+            extra={
+              <Button type="primary" onClick={() => setReloadKey((k) => k + 1)}>
+                Thử lại
+              </Button>
+            }
+          />
+        </Card>
       ) : items.length === 0 ? (
         <Card>
           <Empty description="Chưa có đơn hàng nào">
