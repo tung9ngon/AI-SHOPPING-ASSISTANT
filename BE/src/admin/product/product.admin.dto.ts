@@ -96,6 +96,10 @@ export class UpdateProductDto {
   name?: string;
 
   @IsOptional()
+  @IsUUID()
+  category_id?: string;
+
+  @IsOptional()
   @IsString()
   @MaxLength(100)
   brand?: string;

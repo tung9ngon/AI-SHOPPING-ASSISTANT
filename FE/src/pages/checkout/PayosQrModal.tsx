@@ -15,6 +15,7 @@ export const PAYOS_PENDING_PAYMENT_KEY = 'payos_pending_payment_id';
 
 const POLL_INTERVAL_MS = 3000;
 const SUCCESS_DELAY_MS = 900; // cho người dùng thấy trạng thái thành công trước khi đóng modal
+const MAX_POLL_MS = 15 * 60 * 1000; // dừng poll sau 5 phút để không hỏi trạng thái vô hạn
 
 // Hiển thị mã QR PayOS (VietQR) + tự động kiểm tra trạng thái thanh toán (poll).
 // Khi webhook PayOS xác nhận thành công, GET /payments/:id/status trả 'success'.
@@ -35,10 +36,13 @@ export default function PayosQrModal({
   onSuccess: () => void;
   onClose: () => void;
 }) {
-  const [status, setStatus] = useState<'pending' | 'success' | 'failed'>('pending');
+  const [status, setStatus] = useState<'pending' | 'success' | 'failed' | 'expired'>('pending');
   const [checking, setChecking] = useState(false);
+  // Tăng để khởi động lại phiên poll (nút "Tiếp tục chờ" sau khi hết hạn).
+  const [pollSession, setPollSession] = useState(0);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const successTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const expireTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Chốt kết quả: đảm bảo onSuccess chỉ chạy ĐÚNG MỘT LẦN dù poll tự động và nút
   // "Kiểm tra ngay" cùng trả 'success' gần như đồng thời (state async không kịp phản ánh).
   const settled = useRef(false);
@@ -73,12 +77,20 @@ export default function PayosQrModal({
     setStatus('pending');
     // Poll trong lúc modal mở.
     timer.current = setInterval(() => check(true), POLL_INTERVAL_MS);
+    // Sau MAX_POLL_MS mà chưa có kết quả -> dừng poll, coi như QR hết hạn (tránh
+    // hỏi trạng thái vô hạn khi người dùng bỏ dở). Có thể bấm "Tiếp tục chờ" để poll lại.
+    expireTimeout.current = setTimeout(() => {
+      if (settled.current) return;
+      if (timer.current) clearInterval(timer.current);
+      setStatus('expired');
+    }, MAX_POLL_MS);
     return () => {
       if (timer.current) clearInterval(timer.current);
       if (successTimeout.current) clearTimeout(successTimeout.current);
+      if (expireTimeout.current) clearTimeout(expireTimeout.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, paymentId]);
+  }, [open, paymentId, pollSession]);
 
   return (
     <Modal
@@ -101,6 +113,26 @@ export default function PayosQrModal({
             <Tag color="red" style={{ fontSize: 16, padding: '6px 16px' }}>
               ✗ Thanh toán thất bại
             </Tag>
+          </div>
+        ) : status === 'expired' ? (
+          <div style={{ padding: '24px 0' }}>
+            <Tag color="orange" style={{ fontSize: 16, padding: '6px 16px' }}>
+              ⌛ Đã dừng kiểm tra tự động
+            </Tag>
+            <Paragraph type="secondary" style={{ marginTop: 16, marginBottom: 16 }}>
+              Nếu bạn đã thanh toán, trạng thái vẫn được cập nhật trong mục Đơn hàng của
+              tôi. Bạn cũng có thể tiếp tục chờ hoặc kiểm tra lại.
+            </Paragraph>
+            <Space>
+              <Button
+                type="primary"
+                icon={<ReloadOutlined />}
+                onClick={() => setPollSession((n) => n + 1)}
+              >
+                Tiếp tục chờ
+              </Button>
+              <Button onClick={onClose}>Đóng</Button>
+            </Space>
           </div>
         ) : (
           <>

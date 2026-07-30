@@ -24,13 +24,57 @@ export default function PayosCallbackPage() {
     const paymentId = localStorage.getItem(PAYOS_PENDING_PAYMENT_KEY);
     if (!paymentId) return;
     localStorage.removeItem(PAYOS_PENDING_PAYMENT_KEY);
+
+    // Người dùng bấm huỷ trên cổng PayOS: không cần xác minh, hiện luôn "đã huỷ".
+    if (cancel === 'true' || status === 'CANCELLED') return;
+
+    // Redirect từ PayOS thường về TRƯỚC khi webhook cập nhật BE, nên nếu hỏi status
+    // một lần thường thấy 'pending'. Poll vài lần (tối đa ~20s) để bắt được lúc BE
+    // xác nhận 'success'/'failed'. Nguồn sự thật vẫn là GET /payments/:id/status.
+    const POLL_INTERVAL_MS = 2000;
+    const MAX_ATTEMPTS = 10;
+    let attempts = 0;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
     setVerifying(true);
-    paymentApi
-      .status(paymentId)
-      .then((res) => setVerifiedSuccess(res.data.status === 'success'))
-      .catch(() => setVerifiedSuccess(null))
-      .finally(() => setVerifying(false));
-  }, []);
+
+    const poll = async () => {
+      attempts += 1;
+      try {
+        const res = await paymentApi.status(paymentId);
+        if (cancelled) return;
+        const s = res.data.status;
+        if (s === 'success') {
+          setVerifiedSuccess(true);
+          setVerifying(false);
+          return;
+        }
+        if (s === 'failed' || s === 'refunded') {
+          setVerifiedSuccess(false);
+          setVerifying(false);
+          return;
+        }
+      } catch {
+        // Lỗi tạm thời khi hỏi trạng thái -> thử lại ở lần poll kế tiếp.
+      }
+      if (cancelled) return;
+      if (attempts >= MAX_ATTEMPTS) {
+        // Hết số lần thử mà vẫn pending: coi như chưa xác minh được (an toàn).
+        setVerifiedSuccess((prev) => (prev === true ? true : null));
+        setVerifying(false);
+        return;
+      }
+      timer = setTimeout(poll, POLL_INTERVAL_MS);
+    };
+
+    poll();
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [cancel, status]);
 
   if (verifying) {
     return (

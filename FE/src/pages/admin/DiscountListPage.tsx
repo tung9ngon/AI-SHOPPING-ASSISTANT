@@ -334,6 +334,7 @@ export default function DiscountListPage() {
           usage_limit: values.usage_limit,
           valid_from: payload.valid_from,
           valid_until: payload.valid_until,
+          is_active: values.is_active,
         });
         message.success('Đã thêm mã giảm giá');
       }

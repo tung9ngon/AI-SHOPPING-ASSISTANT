@@ -251,6 +251,14 @@ export default function OrderDetailPage() {
                 </Text>
               </Row>
             )}
+            {Number(order.shipping_discount_amount) > 0 && (
+              <Row justify="space-between" style={{ marginBottom: 8 }}>
+                <Text>Giảm phí vận chuyển</Text>
+                <Text style={{ color: '#52c41a' }}>
+                  -{formatVND(Number(order.shipping_discount_amount))}
+                </Text>
+              </Row>
+            )}
             <Divider style={{ margin: '12px 0' }} />
             <Row justify="space-between" align="middle">
               <Text strong style={{ fontSize: 16 }}>

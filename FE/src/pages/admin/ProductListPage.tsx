@@ -487,6 +487,7 @@ export default function ProductListPage() {
         // 1. Cập nhật thông tin cơ bản
         await adminProductApi.update(editing.id, {
           name: values.name.trim(),
+          category_id: values.category_id || undefined,
           brand: values.brand?.trim() || '',
           price: values.price,
           stock_quantity: values.stock_quantity,
@@ -947,7 +948,6 @@ export default function ProductListPage() {
                           <Select
                             allowClear
                             placeholder="Chọn danh mục"
-                            disabled={!!editing}
                             options={categories.map((category) => ({
                               value: category.id,
                               label: category.name,

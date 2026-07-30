@@ -174,6 +174,7 @@ export class AdminProductService {
     const product = await this.findProductOrFail(id);
 
     if (dto.name !== undefined) product.name = dto.name;
+    if (dto.category_id !== undefined) product.category_id = dto.category_id || null;
     if (dto.brand !== undefined) product.brand = dto.brand.trim() || null;
     if (dto.price !== undefined) product.price = dto.price;
     if (dto.description !== undefined) product.description = dto.description;
@@ -184,6 +185,7 @@ export class AdminProductService {
     return {
       id: saved.id,
       name: saved.name,
+      category_id: saved.category_id,
       brand: saved.brand,
       price: saved.price,
       description: saved.description,

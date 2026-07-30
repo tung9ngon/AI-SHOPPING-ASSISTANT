@@ -58,7 +58,7 @@ export const adminProductApi = {
   }) => api.post<Product>('/admin/products', data),
   update: (
     id: string,
-    data: Partial<{ name: string; brand: string; price: number; stock_quantity: number; description: string; is_active: boolean }>,
+    data: Partial<{ name: string; category_id: string; brand: string; price: number; stock_quantity: number; description: string; is_active: boolean }>,
   ) => api.put<Product>(`/admin/products/${id}`, data),
   remove: (id: string) => api.delete(`/admin/products/${id}`),
 
@@ -167,6 +167,7 @@ export const adminDiscountApi = {
     usage_limit?: number;
     valid_from?: string;
     valid_until?: string;
+    is_active?: boolean;
   }) => api.post<DiscountCode>('/admin/discount-codes', data),
   update: (
     id: string,

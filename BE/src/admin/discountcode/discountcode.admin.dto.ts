@@ -91,6 +91,10 @@ export class CreateDiscountCodeDto {
   @IsOptional()
   @IsDateString()
   valid_until?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  is_active?: boolean;
 }
 
 // PUT /api/admin/discount-codes/:id
