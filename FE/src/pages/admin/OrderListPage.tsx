@@ -501,6 +501,7 @@ export default function OrderListPage() {
         dataSource={items}
         loading={loading}
         className="admin-order-table"
+        scroll={{ x: 950 }}
         pagination={{
           current: page,
           pageSize: PAGE_SIZE,

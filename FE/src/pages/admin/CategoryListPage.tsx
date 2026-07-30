@@ -344,6 +344,7 @@ export default function CategoryListPage() {
         dataSource={items}
         loading={loading}
         className="admin-category-table"
+        scroll={{ x: 750 }}
         pagination={{
           current: page,
           pageSize: PAGE_SIZE,

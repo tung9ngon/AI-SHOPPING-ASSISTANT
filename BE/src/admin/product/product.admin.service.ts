@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { Product } from '../../database/product.entity';
 import { ProductImage } from '../../database/product-image.entity';
 import { ProductSpec } from '../../database/product-spec.entity';
+import { ProductReview } from '../../database/product-review.entity';
 import { Tag } from '../../database/tag.entity';
 import { CloudinaryService } from '../../cloudinary/Cloudinary.service';
 import {
@@ -32,8 +33,10 @@ export class AdminProductService {
     private readonly specRepo: Repository<ProductSpec>,
     @InjectRepository(Tag)
     private readonly tagRepo: Repository<Tag>,
+    @InjectRepository(ProductReview)
+    private readonly reviewRepo: Repository<ProductReview>,
     private readonly cloudinaryService: CloudinaryService,
-  ) {}
+  ) { }
 
   private async findProductOrFail(id: string): Promise<Product> {
     const product = await this.productRepo.findOne({ where: { id } });
@@ -52,57 +55,70 @@ export class AdminProductService {
       page = 1,
       limit = 20,
     } = query;
+    const buildFilteredQb = () => {
+      const qb = this.productRepo.createQueryBuilder('product');
+      if (search) {
+        qb.andWhere('product.name ILIKE :search', { search: `%${search}%` });
+      }
+      if (categoryId) {
+        qb.andWhere('product.category_id = :categoryId', { categoryId });
+      }
+      if (brand) {
+        qb.andWhere('product.brand ILIKE :brand', { brand: `%${brand}%` });
+      }
+      if (isActive !== undefined) {
+        qb.andWhere('product.is_active = :isActive', { isActive });
+      }
+      return qb;
+    };
 
-    const qb = this.productRepo
-      .createQueryBuilder('product')
-      .leftJoinAndSelect('product.category', 'category')
-      .leftJoinAndSelect('product.images', 'images');
+    const total = await buildFilteredQb().getCount();
 
-    if (search) {
-      qb.andWhere('product.name ILIKE :search', { search: `%${search}%` });
-    }
-    if (categoryId) {
-      qb.andWhere('product.category_id = :categoryId', { categoryId });
-    }
-    if (brand) {
-      qb.andWhere('product.brand ILIKE :brand', { brand: `%${brand}%` });
-    }
-    if (isActive !== undefined) {
-      qb.andWhere('product.is_active = :isActive', { isActive });
+    if (total === 0) {
+      return { items: [], total: 0, page, limit, totalPages: 0 };
     }
 
+    const idQb = buildFilteredQb().select(['product.id']);
     switch (sort) {
       case 'price_asc':
-        qb.orderBy('product.price', 'ASC');
+        idQb.orderBy('product.price', 'ASC');
         break;
       case 'price_desc':
-        qb.orderBy('product.price', 'DESC');
+        idQb.orderBy('product.price', 'DESC');
         break;
       case 'rating_desc':
-        qb.orderBy('product.rating', 'DESC');
+        idQb.orderBy('product.rating', 'DESC');
         break;
       case 'newest':
       default:
-        qb.orderBy('product.created_at', 'DESC');
+        idQb.orderBy('product.created_at', 'DESC');
     }
+    idQb.skip((page - 1) * limit).take(limit);
 
-    qb.addOrderBy('images.is_primary', 'DESC').addOrderBy(
-      'images.sort_order',
-      'ASC',
-    );
+    const pageRows = await idQb.getMany();
+    const ids = pageRows.map((p) => p.id);
 
-    qb.skip((page - 1) * limit).take(limit);
+    const detailed = await this.productRepo
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.images', 'images')
+      .whereInIds(ids)
+      .addOrderBy('images.is_primary', 'DESC')
+      .addOrderBy('images.sort_order', 'ASC')
+      .getMany();
 
-    const [items, total] = await qb.getManyAndCount();
+    const orderIndex = new Map(ids.map((id, idx) => [id, idx]));
+    detailed.sort((a, b) => orderIndex.get(a.id)! - orderIndex.get(b.id)!);
 
     return {
-      items: items.map((p) => ({
+      items: detailed.map((p) => ({
         id: p.id,
         name: p.name,
         category: p.category?.name ?? null,
         brand: p.brand,
         price: p.price,
         rating: p.rating,
+        stock_quantity: p.stock_quantity,
         is_active: p.is_active,
         created_at: p.created_at,
         thumbnail: p.images?.[0]?.image_url ?? null,
@@ -114,6 +130,19 @@ export class AdminProductService {
     };
   }
 
+  // GET /api/admin/products/brands
+  async findAllBrands(): Promise<string[]> {
+    const rows = await this.productRepo
+      .createQueryBuilder('product')
+      .select('DISTINCT product.brand', 'brand')
+      .where('product.brand IS NOT NULL')
+      .andWhere("product.brand <> ''")
+      .orderBy('product.brand', 'ASC')
+      .getRawMany<{ brand: string }>();
+
+    return rows.map((r) => r.brand);
+  }
+
   // POST /api/admin/products
   async create(dto: CreateProductDto) {
     const product = this.productRepo.create({
@@ -122,6 +151,7 @@ export class AdminProductService {
       brand: dto.brand ?? null,
       price: dto.price,
       description: dto.description ?? null,
+      stock_quantity: dto.stock_quantity ?? 0,
       is_active: dto.is_active ?? true,
     });
     const saved = await this.productRepo.save(product);
@@ -133,6 +163,7 @@ export class AdminProductService {
       brand: saved.brand,
       price: saved.price,
       description: saved.description,
+      stock_quantity: saved.stock_quantity,
       is_active: saved.is_active,
       created_at: saved.created_at,
     };
@@ -143,20 +174,37 @@ export class AdminProductService {
     const product = await this.findProductOrFail(id);
 
     if (dto.name !== undefined) product.name = dto.name;
+    if (dto.brand !== undefined) product.brand = dto.brand.trim() || null;
     if (dto.price !== undefined) product.price = dto.price;
     if (dto.description !== undefined) product.description = dto.description;
+    if (dto.stock_quantity !== undefined) product.stock_quantity = dto.stock_quantity;
     if (dto.is_active !== undefined) product.is_active = dto.is_active;
-
     const saved = await this.productRepo.save(product);
 
     return {
       id: saved.id,
       name: saved.name,
+      brand: saved.brand,
       price: saved.price,
       description: saved.description,
+      stock_quantity: saved.stock_quantity,
+      rating: saved.rating,
       is_active: saved.is_active,
       updated_at: saved.updated_at,
     };
+  }
+
+  async recalculateRating(productId: string): Promise<string | null> {
+    const raw = await this.reviewRepo
+      .createQueryBuilder('review')
+      .select('AVG(review.rating)', 'avg')
+      .where('review.product_id = :productId', { productId })
+      .getRawOne<{ avg: string | null }>();
+
+    const avg = raw?.avg;
+    const rating = avg !== null && avg !== undefined ? Number(avg).toFixed(1) : null;
+    await this.productRepo.update({ id: productId }, { rating });
+    return rating;
   }
 
   // DELETE /api/admin/products/:id
@@ -183,16 +231,29 @@ export class AdminProductService {
   // POST /api/admin/products/:id/images
   async addImage(
     productId: string,
-    file: Express.Multer.File,
+    file: Express.Multer.File | undefined,
     dto: CreateProductImageDto,
   ) {
-    if (!file) throw new BadRequestException('Vui lòng chọn file ảnh');
+    const imageUrl = dto.image_url?.trim();
+    if (!file && !imageUrl) {
+      throw new BadRequestException('Vui lòng chọn file ảnh hoặc nhập URL ảnh');
+    }
     await this.findProductOrFail(productId);
 
-    const uploadResult = await this.cloudinaryService.uploadImage(
-      file,
-      `products/${productId}`,
-    );
+    let finalUrl: string;
+    let publicId: string | null;
+
+    if (file) {
+      const uploadResult = await this.cloudinaryService.uploadImage(
+        file,
+        `products/${productId}`,
+      );
+      finalUrl = uploadResult.secure_url;
+      publicId = uploadResult.public_id;
+    } else {
+      finalUrl = imageUrl!;
+      publicId = null;
+    }
 
     if (dto.is_primary) {
       await this.imageRepo.update(
@@ -203,8 +264,8 @@ export class AdminProductService {
 
     const image = this.imageRepo.create({
       product_id: productId,
-      image_url: uploadResult.secure_url,
-      public_id: uploadResult.public_id,
+      image_url: finalUrl,
+      public_id: publicId,
       is_primary: dto.is_primary ?? false,
       sort_order: dto.sort_order ?? 0,
     });
@@ -218,7 +279,7 @@ export class AdminProductService {
     };
   }
 
-  // PUT /api/admin/products/:id/images/:image_id  (multipart/form-data, field "file" - optional)
+  // PUT /api/admin/products/:id/images/:image_id
   async updateImage(
     productId: string,
     imageId: string,
@@ -235,7 +296,9 @@ export class AdminProductService {
         file,
         `products/${productId}`,
       );
-      await this.cloudinaryService.deleteImage(image.public_id);
+      if (image.public_id) {
+        await this.cloudinaryService.deleteImage(image.public_id);
+      }
       image.image_url = uploadResult.secure_url;
       image.public_id = uploadResult.public_id;
     }
@@ -271,7 +334,9 @@ export class AdminProductService {
     });
     if (!image) throw new NotFoundException('Không tìm thấy ảnh sản phẩm');
 
-    await this.cloudinaryService.deleteImage(image.public_id);
+    if (image.public_id) {
+      await this.cloudinaryService.deleteImage(image.public_id);
+    }
     await this.imageRepo.remove(image);
 
     if (image.is_primary) {

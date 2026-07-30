@@ -45,26 +45,31 @@ export const adminProductApi = {
     page?: number;
     limit?: number;
   }) => api.get<Paginated<Product>>('/admin/products', { params }),
+  // Toàn bộ brand duy nhất trong hệ thống, dùng cho dropdown lọc (không phụ thuộc trang hiện tại)
+  listBrands: () => api.get<string[]>('/admin/products/brands'),
   create: (data: {
     name: string;
     category_id?: string;
     brand?: string;
     price: number;
+    stock_quantity?: number;
     description?: string;
     is_active?: boolean;
   }) => api.post<Product>('/admin/products', data),
   update: (
     id: string,
-    data: Partial<{ name: string; price: number; description: string; is_active: boolean }>,
+    data: Partial<{ name: string; brand: string; price: number; stock_quantity: number; description: string; is_active: boolean }>,
   ) => api.put<Product>(`/admin/products/${id}`, data),
   remove: (id: string) => api.delete(`/admin/products/${id}`),
 
+  // payload phải có "file" (upload từ máy) HOẶC "image_url" (dán URL có sẵn)
   addImage: (
     id: string,
-    payload: { file: File; is_primary?: boolean; sort_order?: number },
+    payload: { file?: File; image_url?: string; is_primary?: boolean; sort_order?: number },
   ) => {
     const formData = new FormData();
-    formData.append('file', payload.file);
+    if (payload.file) formData.append('file', payload.file);
+    if (payload.image_url) formData.append('image_url', payload.image_url);
     if (payload.is_primary !== undefined) {
       formData.append('is_primary', String(payload.is_primary));
     }
@@ -145,25 +150,32 @@ export const adminOrderApi = {
 export const adminDiscountApi = {
   list: (params?: {
     search?: string;
+    category?: 'order' | 'free_shipping';
     isActive?: boolean;
-    status?: 'running' | 'paused';
+    status?: 'running' | 'paused' | 'upcoming' | 'expired';
     page?: number;
     limit?: number;
   }) => api.get<Paginated<DiscountCode>>('/admin/discount-codes', { params }),
   create: (data: {
     code: string;
     description?: string;
-    discount_type: 'percent' | 'fixed_amount' | 'free_shipping';
+    category?: 'order' | 'free_shipping';
+    discount_type: 'percent' | 'fixed_amount';
     discount_value: number;
     min_order_value?: number;
     max_discount?: number;
     usage_limit?: number;
+    valid_from?: string;
     valid_until?: string;
   }) => api.post<DiscountCode>('/admin/discount-codes', data),
   update: (
     id: string,
     data: Partial<{
+      category: 'order' | 'free_shipping';
+      discount_type: 'percent' | 'fixed_amount';
       discount_value: number;
+      min_order_value: number;
+      max_discount: number;
       description: string;
       usage_limit: number;
       valid_from: string;

@@ -18,9 +18,14 @@ export class QueryDiscountCodeDto {
   search?: string;
 
   @IsOptional()
+  @IsIn(['order', 'free_shipping'])
+  category?: 'order' | 'free_shipping';
+
+  @IsOptional()
   @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean;
+
   @IsOptional()
   @IsIn(['running', 'paused'])
   status?: 'running' | 'paused';
@@ -49,8 +54,12 @@ export class CreateDiscountCodeDto {
   @MaxLength(255)
   description?: string;
 
-  @IsIn(['percent', 'fixed_amount', 'free_shipping'])
-  discount_type: 'percent' | 'fixed_amount' | 'free_shipping';
+  @IsOptional()
+  @IsIn(['order', 'free_shipping'])
+  category?: 'order' | 'free_shipping' = 'order';
+
+  @IsIn(['percent', 'fixed_amount'])
+  discount_type: 'percent' | 'fixed_amount';
 
   @Type(() => Number)
   @IsNumber()
@@ -77,16 +86,40 @@ export class CreateDiscountCodeDto {
 
   @IsOptional()
   @IsDateString()
+  valid_from?: string;
+
+  @IsOptional()
+  @IsDateString()
   valid_until?: string;
 }
 
 // PUT /api/admin/discount-codes/:id
 export class UpdateDiscountCodeDto {
   @IsOptional()
+  @IsIn(['order', 'free_shipping'])
+  category?: 'order' | 'free_shipping';
+
+  @IsOptional()
+  @IsIn(['percent', 'fixed_amount'])
+  discount_type?: 'percent' | 'fixed_amount';
+
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(0)
   discount_value?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  min_order_value?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  max_discount?: number;
 
   @IsOptional()
   @IsString()

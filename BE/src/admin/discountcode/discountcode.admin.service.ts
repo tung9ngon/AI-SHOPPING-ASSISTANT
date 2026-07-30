@@ -17,7 +17,7 @@ export class AdminDiscountCodeService {
   constructor(
     @InjectRepository(DiscountCode)
     private readonly discountRepo: Repository<DiscountCode>,
-  ) {}
+  ) { }
 
   private async findOrFail(id: string): Promise<DiscountCode> {
     const discount = await this.discountRepo.findOne({ where: { id } });
@@ -40,12 +40,16 @@ export class AdminDiscountCodeService {
 
   // GET /api/admin/discount-codes
   async findAll(query: QueryDiscountCodeDto) {
-    const { search, isActive, status, page = 1, limit = 20 } = query;
+    const { search, category, isActive, status, page = 1, limit = 20 } = query;
 
     const qb = this.discountRepo.createQueryBuilder('d');
 
     if (search) {
       qb.andWhere('d.code ILIKE :search', { search: `%${search}%` });
+    }
+
+    if (category) {
+      qb.andWhere('d.category = :category', { category });
     }
 
     if (isActive !== undefined) {
@@ -69,18 +73,25 @@ export class AdminDiscountCodeService {
     const [items, total] = await qb.getManyAndCount();
 
     return {
-      items: items.map((d) => ({
-        id: d.id,
-        code: d.code,
-        discount_type: d.discount_type,
-        discount_value: d.discount_value,
-        usage_limit: d.usage_limit,
-        used_count: d.used_count,
-        valid_from: d.valid_from,
-        valid_until: d.valid_until,
-        is_active: d.is_active,
-        status: this.computeStatus(d),
-      })),
+      items: items.map((d) => {
+        const isLegacyFreeship = (d.discount_type as string) === 'free_shipping';
+        return {
+          id: d.id,
+          code: d.code,
+          description: d.description,
+          category: isLegacyFreeship ? 'free_shipping' : (d.category ?? 'order'),
+          discount_type: isLegacyFreeship ? 'fixed_amount' : (d.discount_type ?? 'percent'),
+          discount_value: d.discount_value,
+          min_order_value: d.min_order_value,
+          max_discount: d.max_discount,
+          usage_limit: d.usage_limit,
+          used_count: d.used_count,
+          valid_from: d.valid_from,
+          valid_until: d.valid_until,
+          is_active: d.is_active,
+          status: this.computeStatus(d),
+        };
+      }),
       total,
       page,
       limit,
@@ -98,11 +109,13 @@ export class AdminDiscountCodeService {
     const discount = this.discountRepo.create({
       code: dto.code,
       description: dto.description ?? null,
+      category: dto.category ?? 'order',
       discount_type: dto.discount_type,
       discount_value: dto.discount_value,
       min_order_value: dto.min_order_value ?? null,
       max_discount: dto.max_discount ?? null,
       usage_limit: dto.usage_limit ?? null,
+      valid_from: dto.valid_from ? new Date(dto.valid_from) : undefined,
       valid_until: dto.valid_until ? new Date(dto.valid_until) : null,
     });
     const saved = await this.discountRepo.save(discount);
@@ -110,6 +123,8 @@ export class AdminDiscountCodeService {
     return {
       id: saved.id,
       code: saved.code,
+      description: saved.description,
+      category: saved.category,
       discount_type: saved.discount_type,
       discount_value: saved.discount_value,
       min_order_value: saved.min_order_value,
@@ -117,6 +132,7 @@ export class AdminDiscountCodeService {
       usage_limit: saved.usage_limit,
       valid_from: saved.valid_from,
       valid_until: saved.valid_until,
+      is_active: saved.is_active,
     };
   }
 
@@ -124,19 +140,26 @@ export class AdminDiscountCodeService {
   async update(id: string, dto: UpdateDiscountCodeDto) {
     const discount = await this.findOrFail(id);
 
-    if (dto.discount_value !== undefined)
-      discount.discount_value = dto.discount_value;
+    if (dto.category !== undefined) discount.category = dto.category;
+    if (dto.discount_type !== undefined) discount.discount_type = dto.discount_type;
+    if (dto.discount_value !== undefined) discount.discount_value = dto.discount_value;
+    if (dto.min_order_value !== undefined) discount.min_order_value = dto.min_order_value;
+    if (dto.max_discount !== undefined) discount.max_discount = dto.max_discount;
+    if (dto.description !== undefined) discount.description = dto.description;
     if (dto.usage_limit !== undefined) discount.usage_limit = dto.usage_limit;
-    if (dto.valid_until !== undefined)
-      discount.valid_until = new Date(dto.valid_until);
+    if (dto.valid_from !== undefined) discount.valid_from = new Date(dto.valid_from);
+    if (dto.valid_until !== undefined) discount.valid_until = new Date(dto.valid_until);
     if (dto.is_active !== undefined) discount.is_active = dto.is_active;
 
     const saved = await this.discountRepo.save(discount);
 
     return {
       id: saved.id,
+      category: saved.category,
+      discount_type: saved.discount_type,
       discount_value: saved.discount_value,
       usage_limit: saved.usage_limit,
+      valid_from: saved.valid_from,
       valid_until: saved.valid_until,
       is_active: saved.is_active,
     };

@@ -25,13 +25,15 @@ interface Props {
 // Nhãn hiển thị ngắn gọn cho giá trị voucher
 function voucherHeadline(v: Voucher): string {
   const value = Number(v.discount_value);
-  if (v.discount_type === 'percent') {
-    return `Giảm ${value}%`;
+  const isFreeship = v.category === 'free_shipping';
+  if (isFreeship) {
+    return v.discount_type === 'percent'
+      ? `Freeship ${value}%`
+      : `Miễn phí ship ${formatVND(value)}`;
   }
-  if (v.discount_type === 'free_shipping') {
-    return `Miễn phí ship ${formatVND(value)}`;
-  }
-  return `Giảm ${formatVND(value)}`;
+  return v.discount_type === 'percent'
+    ? `Giảm ${value}%`
+    : `Giảm ${formatVND(value)}`;
 }
 
 function formatShortDate(value: string | null): string | null {
@@ -57,7 +59,7 @@ function VoucherRow({
 }) {
   const eligible = isVoucherEligible(v, subtotal);
   const amount = calcVoucherAmount(v, subtotal, shippingFee);
-  const isFreeship = v.discount_type === 'free_shipping';
+  const isFreeship = v.category === 'free_shipping';
   const stripColor = isFreeship ? '#26aa99' : '#ff6a00';
   const stripLabel = isFreeship ? 'VẬN\nCHUYỂN' : 'GIẢM\nGIÁ';
   const minValue = v.min_order_value == null ? 0 : Number(v.min_order_value);
@@ -223,14 +225,14 @@ export default function VoucherModal({
       const v: Voucher = {
         code: r.code,
         description: null,
-        discount_type: r.discount_type ?? 'fixed_amount',
+        category: r.category ?? 'order',
+        discount_type: r.discount_type ?? 'percent',
         discount_value: r.discount_value ?? 0,
         min_order_value: r.min_order_value ?? null,
-        // Giữ trần giảm từ BE để calcVoucherAmount không tính vượt (mã percent có max_discount).
         max_discount: r.max_discount ?? null,
         valid_until: null,
       };
-      if (v.discount_type === 'free_shipping') {
+      if (v.category === 'free_shipping') {
         setFreeships((prev) => mergeVoucher(prev, v));
         setDraftFreeship(v);
       } else {

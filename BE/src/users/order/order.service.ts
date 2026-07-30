@@ -37,15 +37,16 @@ export class OrderService {
     discountRepo: Repository<DiscountCode>,
     code: string,
     subtotal: number,
-    allowedTypes: DiscountType[],
+    expectedCategory: 'order' | 'free_shipping',
   ): Promise<DiscountCode> {
     const discount = await discountRepo.findOne({ where: { code } });
     if (!discount)
       throw new BadRequestException(`Mã "${code}" không tồn tại`);
 
-    if (!allowedTypes.includes(discount.discount_type)) {
+    const category = discount.category ?? 'order';
+    if (category !== expectedCategory) {
       throw new BadRequestException(
-        allowedTypes.includes('free_shipping')
+        expectedCategory === 'free_shipping'
           ? `Mã "${code}" không phải mã miễn phí ship, vui lòng nhập vào trường discount_code`
           : `Mã "${code}" là mã miễn phí ship, vui lòng nhập vào trường freeship_code`,
       );
@@ -128,7 +129,7 @@ export class OrderService {
           discountRepo,
           dto.discount_code,
           subtotal,
-          ['percent', 'fixed_amount'],
+          'order',
         );
       }
 
@@ -142,7 +143,7 @@ export class OrderService {
           discountRepo,
           dto.freeship_code,
           subtotal,
-          ['free_shipping'],
+          'free_shipping',
         );
       }
 
@@ -163,8 +164,20 @@ export class OrderService {
       }
 
       if (freeshipDiscount) {
+        if (freeshipDiscount.discount_type === 'percent') {
+          shippingDiscountAmount =
+            (shippingFee * Number(freeshipDiscount.discount_value)) / 100;
+          if (freeshipDiscount.max_discount !== null) {
+            shippingDiscountAmount = Math.min(
+              shippingDiscountAmount,
+              Number(freeshipDiscount.max_discount),
+            );
+          }
+        } else {
+          shippingDiscountAmount = Number(freeshipDiscount.discount_value);
+        }
         shippingDiscountAmount = Math.round(
-          Math.min(Number(freeshipDiscount.discount_value), shippingFee),
+          Math.min(shippingDiscountAmount, shippingFee),
         );
       }
 
