@@ -1,22 +1,39 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   App,
   Button,
+  Card,
+  Col,
+  Empty,
   Form,
   Input,
   InputNumber,
   Modal,
   Popconfirm,
+  Row,
   Select,
+  Space,
+  Spin,
   Switch,
   Table,
+  Tabs,
   Tag,
+  Tooltip,
 } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
-import { PlusOutlined, StarFilled } from '@ant-design/icons';
+import {
+  CheckCircleFilled,
+  DeleteOutlined,
+  PictureOutlined,
+  PlusOutlined,
+  StarFilled,
+  StarOutlined,
+  UploadOutlined,
+} from '@ant-design/icons';
 import { adminCategoryApi, adminProductApi } from '../../api/admin';
+import { productApi } from '../../api/products';
 import { getErrorMessage } from '../../api/client';
-import type { Category } from '../../types';
+import type { Category, ProductImage, ProductSpec } from '../../types';
 import { formatVND } from '../../utils/format';
 import './ProductListPage.css';
 
@@ -33,6 +50,8 @@ interface AdminProductRow {
   is_active: boolean;
   description?: string | null;
   thumbnail?: string | null;
+  images?: ProductImage[];
+  specs?: ProductSpec[];
 }
 
 interface ProductFormValues {
@@ -43,6 +62,33 @@ interface ProductFormValues {
   description?: string;
   is_active: boolean;
 }
+
+export interface ModalImageItem {
+  key: string;
+  id?: string;
+  file?: File;
+  previewUrl: string;
+  is_primary: boolean;
+  sort_order: number;
+}
+
+export interface ModalSpecItem {
+  key: string;
+  id?: string;
+  spec_key: string;
+  spec_value: string;
+  spec_unit: string;
+}
+
+const SPEC_PRESETS = [
+  { key: 'Màn hình', unit: 'inch' },
+  { key: 'Chip / CPU', unit: '' },
+  { key: 'RAM', unit: 'GB' },
+  { key: 'Dung lượng lưu trữ', unit: 'GB' },
+  { key: 'Pin', unit: 'mAh' },
+  { key: 'Trọng lượng', unit: 'g' },
+  { key: 'Hệ điều hành', unit: '' },
+];
 
 const SAMPLE_PRODUCTS: AdminProductRow[] = [
   ['Laptop UltraBook Pro 14 M3', 'Apple', 'Laptop', 34990000, 4.9, '#2b1b6f'],
@@ -72,6 +118,11 @@ const SAMPLE_PRODUCTS: AdminProductRow[] = [
   rating: Number(rating),
   is_active: true,
   thumbnail: String(color),
+  images: [],
+  specs: [
+    { id: `spec-1-${index}`, spec_key: 'Hãng sản xuất', spec_value: String(brand), spec_unit: null },
+    { id: `spec-2-${index}`, spec_key: 'Bảo hành', spec_value: '12', spec_unit: 'tháng' },
+  ],
 }));
 
 function productCategoryName(product: AdminProductRow) {
@@ -129,6 +180,16 @@ export default function ProductListPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AdminProductRow | null>(null);
   const [fallbackReason, setFallbackReason] = useState('');
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  // States cho Ảnh & Thông số trong Modal
+  const [modalImages, setModalImages] = useState<ModalImageItem[]>([]);
+  const [modalSpecs, setModalSpecs] = useState<ModalSpecItem[]>([]);
+  const [initialImages, setInitialImages] = useState<ModalImageItem[]>([]);
+  const [initialSpecs, setInitialSpecs] = useState<ModalSpecItem[]>([]);
+  const [imageUrlInput, setImageUrlInput] = useState('');
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isSampleMode = !!fallbackReason;
 
@@ -204,10 +265,15 @@ export default function ProductListPage() {
       description: '',
       is_active: true,
     });
+    setModalImages([]);
+    setModalSpecs([]);
+    setInitialImages([]);
+    setInitialSpecs([]);
+    setImageUrlInput('');
     setModalOpen(true);
   };
 
-  const openEditModal = (product: AdminProductRow) => {
+  const openEditModal = async (product: AdminProductRow) => {
     setEditing(product);
     const productCategory =
       typeof product.category === 'object' && product.category ? product.category.id : product.category_id ?? undefined;
@@ -219,23 +285,284 @@ export default function ProductListPage() {
       description: product.description ?? '',
       is_active: product.is_active,
     });
+
+    setModalImages([]);
+    setModalSpecs([]);
+    setInitialImages([]);
+    setInitialSpecs([]);
+    setImageUrlInput('');
     setModalOpen(true);
+    setDetailLoading(true);
+
+    try {
+      // Tải chi tiết sản phẩm bao gồm đầy đủ images và specs từ backend
+      const res = await productApi.detail(product.id);
+      const detail = res.data;
+
+      const loadedImages: ModalImageItem[] = (detail.images ?? []).map((img, index) => ({
+        key: img.id,
+        id: img.id,
+        previewUrl: img.image_url,
+        is_primary: img.is_primary,
+        sort_order: img.sort_order ?? index,
+      }));
+
+      // Nếu không có ảnh trong DB nhưng có thumbnail, dùng thumbnail làm ảnh xem trước
+      if (loadedImages.length === 0 && detail.images?.length === 0 && product.thumbnail?.startsWith('http')) {
+        loadedImages.push({
+          key: 'thumb-legacy',
+          previewUrl: product.thumbnail,
+          is_primary: true,
+          sort_order: 0,
+        });
+      }
+
+      const loadedSpecs: ModalSpecItem[] = (detail.specs ?? []).map((s) => ({
+        key: s.id,
+        id: s.id,
+        spec_key: s.spec_key,
+        spec_value: s.spec_value,
+        spec_unit: s.spec_unit ?? '',
+      }));
+
+      setModalImages(loadedImages);
+      setModalSpecs(loadedSpecs);
+      setInitialImages(loadedImages);
+      setInitialSpecs(loadedSpecs);
+    } catch {
+      // Mẫu/offline fallback
+      if (product.specs) {
+        const loadedSpecs: ModalSpecItem[] = product.specs.map((s) => ({
+          key: s.id,
+          id: s.id,
+          spec_key: s.spec_key,
+          spec_value: s.spec_value,
+          spec_unit: s.spec_unit ?? '',
+        }));
+        setModalSpecs(loadedSpecs);
+        setInitialSpecs(loadedSpecs);
+      }
+      if (product.thumbnail?.startsWith('http')) {
+        const loadedImages: ModalImageItem[] = [
+          {
+            key: 'thumb-sample',
+            previewUrl: product.thumbnail,
+            is_primary: true,
+            sort_order: 0,
+          },
+        ];
+        setModalImages(loadedImages);
+        setInitialImages(loadedImages);
+      }
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
+  // --- Quản lý Ảnh ---
+  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newItems: ModalImageItem[] = Array.from(files).map((file, index) => {
+      const isFirst = modalImages.length === 0 && index === 0;
+      return {
+        key: `new-file-${Date.now()}-${index}-${Math.random()}`,
+        file,
+        previewUrl: URL.createObjectURL(file),
+        is_primary: isFirst,
+        sort_order: modalImages.length + index,
+      };
+    });
+
+    setModalImages((prev) => {
+      const next = [...prev, ...newItems];
+      // Đảm bảo luôn có 1 ảnh làm primary
+      if (!next.some((img) => img.is_primary) && next.length > 0) {
+        next[0].is_primary = true;
+      }
+      return next;
+    });
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleAddImageUrl = () => {
+    const url = imageUrlInput.trim();
+    if (!url) return;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      message.error('Vui lòng nhập đường dẫn URL ảnh hợp lệ (http:// hoặc https://)');
+      return;
+    }
+
+    const newItem: ModalImageItem = {
+      key: `url-${Date.now()}-${Math.random()}`,
+      previewUrl: url,
+      is_primary: modalImages.length === 0,
+      sort_order: modalImages.length,
+    };
+
+    setModalImages((prev) => {
+      const next = [...prev, newItem];
+      if (!next.some((img) => img.is_primary) && next.length > 0) {
+        next[0].is_primary = true;
+      }
+      return next;
+    });
+    setImageUrlInput('');
+  };
+
+  const setPrimaryImage = (key: string) => {
+    setModalImages((prev) =>
+      prev.map((img) => ({
+        ...img,
+        is_primary: img.key === key,
+      })),
+    );
+  };
+
+  const removeImage = (key: string) => {
+    setModalImages((prev) => {
+      const filtered = prev.filter((img) => img.key !== key);
+      // Nếu xoá ảnh chính, gán ảnh đầu tiên làm ảnh chính
+      if (filtered.length > 0 && !filtered.some((img) => img.is_primary)) {
+        filtered[0].is_primary = true;
+      }
+      return filtered;
+    });
+  };
+
+  // --- Quản lý Thông số kỹ thuật ---
+  const addSpecRow = (keyName = '', unit = '') => {
+    setModalSpecs((prev) => [
+      ...prev,
+      {
+        key: `spec-${Date.now()}-${Math.random()}`,
+        spec_key: keyName,
+        spec_value: '',
+        spec_unit: unit,
+      },
+    ]);
+  };
+
+  const updateSpecRow = (key: string, field: 'spec_key' | 'spec_value' | 'spec_unit', value: string) => {
+    setModalSpecs((prev) =>
+      prev.map((item) => (item.key === key ? { ...item, [field]: value } : item)),
+    );
+  };
+
+  const removeSpecRow = (key: string) => {
+    setModalSpecs((prev) => prev.filter((item) => item.key !== key));
+  };
+
+  // --- Submit sản phẩm ---
   const submitProduct = async () => {
     const values = await form.validateFields();
     setSaving(true);
     try {
+      let productId = editing?.id;
+
       if (editing) {
+        // 1. Cập nhật thông tin cơ bản
         await adminProductApi.update(editing.id, {
           name: values.name.trim(),
           price: values.price,
           description: values.description?.trim() || '',
           is_active: values.is_active,
         });
+
+        // 2. Xử lý Ảnh
+        // Ảnh bị xoá
+        const deletedImages = initialImages.filter((init) => init.id && !modalImages.some((m) => m.id === init.id));
+        for (const img of deletedImages) {
+          try {
+            await adminProductApi.removeImage(editing.id, img.id!);
+          } catch (e) {
+            console.error('Lỗi xoá ảnh:', e);
+          }
+        }
+        // Ảnh mới (tải file)
+        for (let i = 0; i < modalImages.length; i++) {
+          const img = modalImages[i];
+          if (img.file) {
+            try {
+              await adminProductApi.addImage(editing.id, {
+                file: img.file,
+                is_primary: img.is_primary,
+                sort_order: i,
+              });
+            } catch (e) {
+              console.error('Lỗi thêm ảnh mới:', e);
+            }
+          } else if (img.id) {
+            // Cập nhật trạng thái ảnh chính nếu thay đổi
+            const initial = initialImages.find((init) => init.id === img.id);
+            if (initial && initial.is_primary !== img.is_primary) {
+              try {
+                await adminProductApi.updateImage(editing.id, img.id, {
+                  is_primary: img.is_primary,
+                  sort_order: i,
+                });
+              } catch (e) {
+                console.error('Lỗi cập nhật ảnh:', e);
+              }
+            }
+          }
+        }
+
+        // 3. Xử lý Thông số kỹ thuật
+        const deletedSpecs = initialSpecs.filter((init) => init.id && !modalSpecs.some((m) => m.id === init.id));
+        for (const spec of deletedSpecs) {
+          try {
+            await adminProductApi.removeSpec(editing.id, spec.id!);
+          } catch (e) {
+            console.error('Lỗi xoá spec:', e);
+          }
+        }
+
+        for (const spec of modalSpecs) {
+          const k = spec.spec_key.trim();
+          const v = spec.spec_value.trim();
+          const u = spec.spec_unit.trim() || undefined;
+          if (!k || !v) continue;
+
+          if (spec.id) {
+            // Cập nhật spec cũ
+            const initial = initialSpecs.find((init) => init.id === spec.id);
+            if (
+              initial &&
+              (initial.spec_key !== k || initial.spec_value !== v || (initial.spec_unit || '') !== (u || ''))
+            ) {
+              try {
+                await adminProductApi.updateSpec(editing.id, spec.id, {
+                  spec_key: k,
+                  spec_value: v,
+                  spec_unit: u ?? '',
+                });
+              } catch (e) {
+                console.error('Lỗi sửa spec:', e);
+              }
+            }
+          } else {
+            // Thêm spec mới
+            try {
+              await adminProductApi.addSpec(editing.id, {
+                spec_key: k,
+                spec_value: v,
+                spec_unit: u,
+              });
+            } catch (e) {
+              console.error('Lỗi thêm spec:', e);
+            }
+          }
+        }
+
         message.success('Đã cập nhật sản phẩm');
       } else {
-        await adminProductApi.create({
+        // --- Thêm sản phẩm mới ---
+        const res = await adminProductApi.create({
           name: values.name.trim(),
           category_id: values.category_id,
           brand: values.brand?.trim() || '',
@@ -243,12 +570,100 @@ export default function ProductListPage() {
           description: values.description?.trim() || '',
           is_active: values.is_active,
         });
-        message.success('Đã thêm sản phẩm');
+        productId = res.data.id;
+
+        // Thêm các ảnh đã chọn
+        for (let i = 0; i < modalImages.length; i++) {
+          const img = modalImages[i];
+          if (img.file) {
+            try {
+              await adminProductApi.addImage(productId, {
+                file: img.file,
+                is_primary: img.is_primary,
+                sort_order: i,
+              });
+            } catch (e) {
+              console.error('Lỗi tải ảnh khi tạo sản phẩm:', e);
+            }
+          }
+        }
+
+        // Thêm thông số kỹ thuật
+        for (const spec of modalSpecs) {
+          const k = spec.spec_key.trim();
+          const v = spec.spec_value.trim();
+          const u = spec.spec_unit.trim() || undefined;
+          if (k && v) {
+            try {
+              await adminProductApi.addSpec(productId, {
+                spec_key: k,
+                spec_value: v,
+                spec_unit: u,
+              });
+            } catch (e) {
+              console.error('Lỗi thêm thông số khi tạo sản phẩm:', e);
+            }
+          }
+        }
+
+        message.success('Đã thêm sản phẩm mới thành công');
       }
+
       setModalOpen(false);
       loadProducts();
     } catch (err) {
-      message.error(getErrorMessage(err));
+      // Nếu API báo lỗi (hoặc đang chạy mode mẫu), cập nhật state local để xem được
+      if (isSampleMode || editing?.id.startsWith('sample-')) {
+        const primaryImg = modalImages.find((img) => img.is_primary)?.previewUrl || modalImages[0]?.previewUrl || null;
+        if (editing) {
+          setItems((prev) =>
+            prev.map((item) =>
+              item.id === editing.id
+                ? {
+                    ...item,
+                    name: values.name.trim(),
+                    price: values.price,
+                    description: values.description?.trim() || '',
+                    is_active: values.is_active,
+                    thumbnail: primaryImg || item.thumbnail,
+                    specs: modalSpecs.map((s, idx) => ({
+                      id: s.id || `sample-spec-${idx}`,
+                      spec_key: s.spec_key,
+                      spec_value: s.spec_value,
+                      spec_unit: s.spec_unit || null,
+                    })),
+                  }
+                : item,
+            ),
+          );
+          message.success('Đã cập nhật sản phẩm (chế độ dữ liệu mẫu)');
+        } else {
+          const categoryName = categories.find((c) => c.id === values.category_id)?.name || 'Khác';
+          const newRow: AdminProductRow = {
+            id: `sample-product-${Date.now()}`,
+            name: values.name.trim(),
+            brand: values.brand?.trim() || 'Khác',
+            category: categoryName,
+            price: values.price,
+            rating: null,
+            is_active: values.is_active,
+            description: values.description?.trim() || '',
+            thumbnail: primaryImg || '#2b1b6f',
+            specs: modalSpecs.map((s, idx) => ({
+              id: `sample-spec-${idx}`,
+              spec_key: s.spec_key,
+              spec_value: s.spec_value,
+              spec_unit: s.spec_unit || null,
+            })),
+          };
+          setItems((prev) => [newRow, ...prev]);
+          setTotal((t) => t + 1);
+          message.success('Đã thêm sản phẩm mới (chế độ dữ liệu mẫu)');
+        }
+        setModalOpen(false);
+      } else {
+        message.error(getErrorMessage(err));
+      }
     } finally {
       setSaving(false);
     }
@@ -257,10 +672,17 @@ export default function ProductListPage() {
   const removeProduct = async (product: AdminProductRow) => {
     try {
       await adminProductApi.remove(product.id);
-      message.success('Đã ẩn sản phẩm');
-      loadProducts();
+      message.success('Đã xoá sản phẩm thành công');
+      setItems((prev) => prev.filter((p) => p.id !== product.id));
+      setTotal((t) => Math.max(0, t - 1));
     } catch (err) {
-      message.error(getErrorMessage(err));
+      if (isSampleMode || product.id.startsWith('sample-')) {
+        setItems((prev) => prev.filter((p) => p.id !== product.id));
+        setTotal((t) => Math.max(0, t - 1));
+        message.success('Đã xoá sản phẩm thành công (chế độ dữ liệu mẫu)');
+      } else {
+        message.error(getErrorMessage(err));
+      }
     }
   };
 
@@ -323,14 +745,14 @@ export default function ProductListPage() {
             Sửa
           </Button>
           <Popconfirm
-            title="Ẩn sản phẩm này?"
-            description="Sản phẩm sẽ chuyển sang trạng thái ngừng bán."
-            okText="Ẩn"
+            title="Xác nhận xoá sản phẩm?"
+            description="Bạn có chắc chắn muốn xoá sản phẩm này không? Thao tác này sẽ xoá sản phẩm ngay lập tức."
+            okText="Xoá ngay"
             cancelText="Huỷ"
-            disabled={isSampleMode}
+            okButtonProps={{ danger: true }}
             onConfirm={() => removeProduct(record)}
           >
-            <Button type="link" danger disabled={isSampleMode}>
+            <Button type="link" danger>
               Xoá
             </Button>
           </Popconfirm>
@@ -421,49 +843,265 @@ export default function ProductListPage() {
         confirmLoading={saving}
         onOk={submitProduct}
         onCancel={() => setModalOpen(false)}
+        width={760}
         destroyOnClose
+        className="admin-product-modal"
       >
-        <Form form={form} layout="vertical" className="admin-product-form">
-          <Form.Item
-            label="Tên sản phẩm"
-            name="name"
-            rules={[{ required: true, message: 'Nhập tên sản phẩm' }]}
-          >
-            <Input placeholder="Ví dụ: Laptop UltraBook Pro 14 M3" />
-          </Form.Item>
+        <Spin spinning={detailLoading} tip="Đang tải dữ liệu chi tiết...">
+          <Tabs
+            defaultActiveKey="info"
+            items={[
+              {
+                key: 'info',
+                label: 'Thông tin cơ bản',
+                children: (
+                  <Form form={form} layout="vertical" className="admin-product-form">
+                    <Row gutter={16}>
+                      <Col span={16}>
+                        <Form.Item
+                          label="Tên sản phẩm"
+                          name="name"
+                          rules={[{ required: true, message: 'Nhập tên sản phẩm' }]}
+                        >
+                          <Input placeholder="Ví dụ: Laptop UltraBook Pro 14 M3" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={8}>
+                        <Form.Item label="Thương hiệu" name="brand">
+                          <Input placeholder="Ví dụ: Apple" disabled={!!editing} />
+                        </Form.Item>
+                      </Col>
+                    </Row>
 
-          <Form.Item label="Thương hiệu" name="brand">
-            <Input placeholder="Ví dụ: Apple" disabled={!!editing} />
-          </Form.Item>
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <Form.Item label="Danh mục" name="category_id">
+                          <Select
+                            allowClear
+                            placeholder="Chọn danh mục"
+                            disabled={!!editing}
+                            options={categories.map((category) => ({
+                              value: category.id,
+                              label: category.name,
+                            }))}
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          label="Giá (₫)"
+                          name="price"
+                          rules={[{ required: true, message: 'Nhập giá sản phẩm' }]}
+                        >
+                          <InputNumber<number>
+                            min={0}
+                            step={10000}
+                            style={{ width: '100%' }}
+                            formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                            parser={(value) => Number(value?.replace(/,/g, '') || 0)}
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
 
-          <Form.Item label="Danh mục" name="category_id">
-            <Select
-              allowClear
-              placeholder="Chọn danh mục"
-              disabled={!!editing}
-              options={categories.map((category) => ({
-                value: category.id,
-                label: category.name,
-              }))}
-            />
-          </Form.Item>
+                    <Form.Item label="Mô tả sản phẩm" name="description">
+                      <Input.TextArea rows={4} placeholder="Nhập bài viết mô tả chi tiết sản phẩm..." />
+                    </Form.Item>
 
-          <Form.Item
-            label="Giá"
-            name="price"
-            rules={[{ required: true, message: 'Nhập giá sản phẩm' }]}
-          >
-            <InputNumber min={0} step={10000} style={{ width: '100%' }} />
-          </Form.Item>
+                    <Form.Item label="Trạng thái kinh doanh" name="is_active" valuePropName="checked">
+                      <Switch checkedChildren="Đang bán" unCheckedChildren="Ngừng bán" />
+                    </Form.Item>
+                  </Form>
+                ),
+              },
+              {
+                key: 'images',
+                label: `Hình ảnh (${modalImages.length})`,
+                children: (
+                  <div className="admin-product-images-tab">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      style={{ display: 'none' }}
+                      accept="image/*"
+                      multiple
+                      onChange={handleFilesSelected}
+                    />
 
-          <Form.Item label="Mô tả" name="description">
-            <Input.TextArea rows={3} placeholder="Mô tả ngắn về sản phẩm" />
-          </Form.Item>
+                    <div className="admin-product-image-upload-bar">
+                      <Button
+                        type="dashed"
+                        icon={<UploadOutlined />}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        Tải ảnh từ máy
+                      </Button>
 
-          <Form.Item label="Đang bán" name="is_active" valuePropName="checked">
-            <Switch checkedChildren="Bán" unCheckedChildren="Ẩn" />
-          </Form.Item>
-        </Form>
+                      <div className="admin-product-url-input">
+                        <Input
+                          placeholder="Hoặc dán URL ảnh (https://...)"
+                          value={imageUrlInput}
+                          onChange={(e) => setImageUrlInput(e.target.value)}
+                          onPressEnter={handleAddImageUrl}
+                        />
+                        <Button type="primary" onClick={handleAddImageUrl}>
+                          Thêm URL
+                        </Button>
+                      </div>
+                    </div>
+
+                    {modalImages.length === 0 ? (
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description="Chưa có hình ảnh nào. Chọn ảnh từ máy hoặc nhập URL để thêm ảnh sản phẩm."
+                        style={{ margin: '32px 0' }}
+                      />
+                    ) : (
+                      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+                        {modalImages.map((img) => (
+                          <Col xs={12} sm={8} md={6} key={img.key}>
+                            <Card
+                              hoverable
+                              className={`admin-image-card ${img.is_primary ? 'is-primary' : ''}`}
+                              styles={{ body: { padding: 8 } }}
+                              cover={
+                                <div className="admin-image-preview-wrapper">
+                                  <img src={img.previewUrl} alt="Preview" className="admin-image-preview" />
+                                  {img.is_primary && (
+                                    <Tag color="orange" className="admin-primary-tag">
+                                      <CheckCircleFilled /> Ảnh chính
+                                    </Tag>
+                                  )}
+                                </div>
+                              }
+                            >
+                              <div className="admin-image-card-actions">
+                                {!img.is_primary ? (
+                                  <Tooltip title="Đặt làm ảnh chính">
+                                    <Button
+                                      size="small"
+                                      type="default"
+                                      icon={<StarOutlined />}
+                                      onClick={() => setPrimaryImage(img.key)}
+                                    >
+                                      Ảnh chính
+                                    </Button>
+                                  </Tooltip>
+                                ) : (
+                                  <Tag color="gold" style={{ margin: 0 }}>
+                                    <StarFilled /> Primary
+                                  </Tag>
+                                )}
+
+                                <Tooltip title="Xoá ảnh này">
+                                  <Button
+                                    size="small"
+                                    danger
+                                    type="text"
+                                    icon={<DeleteOutlined />}
+                                    onClick={() => removeImage(img.key)}
+                                  />
+                                </Tooltip>
+                              </div>
+                            </Card>
+                          </Col>
+                        ))}
+                      </Row>
+                    )}
+                  </div>
+                ),
+              },
+              {
+                key: 'specs',
+                label: `Thông số kỹ thuật (${modalSpecs.length})`,
+                children: (
+                  <div className="admin-product-specs-tab">
+                    <div className="admin-specs-presets">
+                      <span className="admin-specs-presets-title">Gợi ý nhanh:</span>
+                      <Space wrap size={[6, 6]}>
+                        {SPEC_PRESETS.map((preset) => (
+                          <Tag.CheckableTag
+                            key={preset.key}
+                            checked={modalSpecs.some((s) => s.spec_key === preset.key)}
+                            onChange={(checked) => {
+                              if (checked) {
+                                addSpecRow(preset.key, preset.unit);
+                              }
+                            }}
+                          >
+                            + {preset.key}
+                          </Tag.CheckableTag>
+                        ))}
+                      </Space>
+                    </div>
+
+                    <div className="admin-specs-toolbar">
+                      <Button
+                        type="dashed"
+                        icon={<PlusOutlined />}
+                        onClick={() => addSpecRow()}
+                        style={{ width: '100%' }}
+                      >
+                        Thêm dòng thông số kỹ thuật
+                      </Button>
+                    </div>
+
+                    {modalSpecs.length === 0 ? (
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description="Chưa có thông số kỹ thuật nào. Bấm 'Thêm dòng' hoặc chọn Gợi ý nhanh ở trên."
+                        style={{ margin: '32px 0' }}
+                      />
+                    ) : (
+                      <div className="admin-specs-list">
+                        <Row gutter={8} className="admin-specs-header">
+                          <Col span={9}>Tên thông số (Key)</Col>
+                          <Col span={9}>Giá trị (Value)</Col>
+                          <Col span={4}>Đơn vị (Unit)</Col>
+                          <Col span={2}></Col>
+                        </Row>
+
+                        {modalSpecs.map((spec) => (
+                          <Row gutter={8} key={spec.key} className="admin-spec-row">
+                            <Col span={9}>
+                              <Input
+                                placeholder="Vd: RAM, Màn hình..."
+                                value={spec.spec_key}
+                                onChange={(e) => updateSpecRow(spec.key, 'spec_key', e.target.value)}
+                              />
+                            </Col>
+                            <Col span={9}>
+                              <Input
+                                placeholder="Vd: 16GB, 15.6 inch..."
+                                value={spec.spec_value}
+                                onChange={(e) => updateSpecRow(spec.key, 'spec_value', e.target.value)}
+                              />
+                            </Col>
+                            <Col span={4}>
+                              <Input
+                                placeholder="Vd: GB, inch..."
+                                value={spec.spec_unit}
+                                onChange={(e) => updateSpecRow(spec.key, 'spec_unit', e.target.value)}
+                              />
+                            </Col>
+                            <Col span={2} style={{ textAlign: 'center' }}>
+                              <Button
+                                danger
+                                type="text"
+                                icon={<DeleteOutlined />}
+                                onClick={() => removeSpecRow(spec.key)}
+                              />
+                            </Col>
+                          </Row>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ),
+              },
+            ]}
+          />
+        </Spin>
       </Modal>
     </div>
   );

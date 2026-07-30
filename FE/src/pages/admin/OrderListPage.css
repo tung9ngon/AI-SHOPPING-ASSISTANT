@@ -24,7 +24,15 @@
 }
 
 .admin-order-status {
-  width: 150px;
+  width: 160px;
+}
+
+.admin-order-status-select {
+  width: 155px;
+}
+
+.admin-order-status-select .ant-select-selector {
+  padding: 0 4px !important;
 }
 
 .admin-order-table {
