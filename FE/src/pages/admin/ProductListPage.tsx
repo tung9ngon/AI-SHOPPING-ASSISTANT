@@ -47,6 +47,7 @@ interface AdminProductRow {
   brand: string | null;
   price: number;
   rating: string | number | null;
+  stock_quantity: number;
   is_active: boolean;
   description?: string | null;
   thumbnail?: string | null;
@@ -59,6 +60,7 @@ interface ProductFormValues {
   brand?: string;
   category_id?: string;
   price: number;
+  stock_quantity: number;
   description?: string;
   is_active: boolean;
 }
@@ -116,6 +118,7 @@ const SAMPLE_PRODUCTS: AdminProductRow[] = [
   category: String(category),
   price: Number(price),
   rating: Number(rating),
+  stock_quantity: 0,
   is_active: true,
   thumbnail: String(color),
   images: [],
@@ -160,6 +163,7 @@ function normalizeProduct(raw: unknown): AdminProductRow {
     category: item.category ?? item.category_name ?? null,
     price: Number(item.price ?? 0),
     rating: item.rating ?? null,
+    stock_quantity: Number(item.stock_quantity ?? 0),
     is_active: item.is_active ?? item.isActive ?? false,
     thumbnail: item.thumbnail ?? item.image ?? null,
   };
@@ -170,6 +174,7 @@ export default function ProductListPage() {
   const [form] = Form.useForm<ProductFormValues>();
   const [items, setItems] = useState<AdminProductRow[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [allBrands, setAllBrands] = useState<string[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -199,12 +204,15 @@ export default function ProductListPage() {
   );
 
   const brandOptions = useMemo(() => {
-    const fromItems = items.map((product) => product.brand).filter(Boolean) as string[];
-    return Array.from(new Set([...sampleBrands, ...fromItems])).map((value) => ({
+    // Trước đây chỉ lấy brand từ `items` (danh sách của TRANG hiện tại, tối đa PAGE_SIZE sản phẩm)
+    // nên mỗi trang hiển thị brand khác nhau. Giờ dùng allBrands lấy từ API riêng
+    // (toàn bộ brand duy nhất trong hệ thống), chỉ fallback sang dữ liệu mẫu khi API lỗi.
+    const source = isSampleMode ? sampleBrands : allBrands;
+    return Array.from(new Set(source)).map((value) => ({
       value,
       label: value,
     }));
-  }, [items, sampleBrands]);
+  }, [allBrands, sampleBrands, isSampleMode]);
 
   const query = useMemo(
     () => ({
@@ -243,11 +251,20 @@ export default function ProductListPage() {
     }
   };
 
+  const loadBrands = () => {
+    adminProductApi
+      .listBrands()
+      .then((res) => setAllBrands(res.data ?? []))
+      .catch(() => setAllBrands([]));
+  };
+
   useEffect(() => {
     adminCategoryApi
       .list({ limit: 100 })
       .then((res) => setCategories((res.data.items ?? res.data.data ?? []) as Category[]))
       .catch(() => setCategories([]));
+
+    loadBrands();
   }, []);
 
   useEffect(() => {
@@ -262,6 +279,7 @@ export default function ProductListPage() {
       brand: '',
       category_id: undefined,
       price: 0,
+      stock_quantity: 0,
       description: '',
       is_active: true,
     });
@@ -282,6 +300,7 @@ export default function ProductListPage() {
       brand: product.brand ?? '',
       category_id: productCategory,
       price: Number(product.price ?? 0),
+      stock_quantity: Number(product.stock_quantity ?? 0),
       description: product.description ?? '',
       is_active: product.is_active,
     });
@@ -468,25 +487,30 @@ export default function ProductListPage() {
         // 1. Cập nhật thông tin cơ bản
         await adminProductApi.update(editing.id, {
           name: values.name.trim(),
+          brand: values.brand?.trim() || '',
           price: values.price,
+          stock_quantity: values.stock_quantity,
           description: values.description?.trim() || '',
           is_active: values.is_active,
         });
 
         // 2. Xử lý Ảnh
+        const imageErrors: string[] = [];
+
         // Ảnh bị xoá
         const deletedImages = initialImages.filter((init) => init.id && !modalImages.some((m) => m.id === init.id));
         for (const img of deletedImages) {
           try {
             await adminProductApi.removeImage(editing.id, img.id!);
           } catch (e) {
-            console.error('Lỗi xoá ảnh:', e);
+            imageErrors.push(`Xoá ảnh thất bại: ${getErrorMessage(e)}`);
           }
         }
-        // Ảnh mới (tải file)
+        // Ảnh mới (tải file HOẶC dán URL) và ảnh cũ có thay đổi is_primary/sort_order
         for (let i = 0; i < modalImages.length; i++) {
           const img = modalImages[i];
           if (img.file) {
+            // Ảnh mới upload từ máy
             try {
               await adminProductApi.addImage(editing.id, {
                 file: img.file,
@@ -494,20 +518,32 @@ export default function ProductListPage() {
                 sort_order: i,
               });
             } catch (e) {
-              console.error('Lỗi thêm ảnh mới:', e);
+              imageErrors.push(`Thêm ảnh mới thất bại: ${getErrorMessage(e)}`);
             }
           } else if (img.id) {
-            // Cập nhật trạng thái ảnh chính nếu thay đổi
+            // Ảnh cũ đã có trong DB - cập nhật nếu is_primary hoặc sort_order thay đổi
             const initial = initialImages.find((init) => init.id === img.id);
-            if (initial && initial.is_primary !== img.is_primary) {
+            if (initial && (initial.is_primary !== img.is_primary || initial.sort_order !== i)) {
               try {
                 await adminProductApi.updateImage(editing.id, img.id, {
                   is_primary: img.is_primary,
                   sort_order: i,
                 });
               } catch (e) {
-                console.error('Lỗi cập nhật ảnh:', e);
+                imageErrors.push(`Cập nhật ảnh thất bại: ${getErrorMessage(e)}`);
               }
+            }
+          } else {
+            // Ảnh mới thêm bằng cách dán URL (không có file, chưa có id trong DB).
+            // Trước đây nhánh này không tồn tại nên ảnh dạng này bị "rơi mất" sau khi lưu/reload.
+            try {
+              await adminProductApi.addImage(editing.id, {
+                image_url: img.previewUrl,
+                is_primary: img.is_primary,
+                sort_order: i,
+              });
+            } catch (e) {
+              imageErrors.push(`Thêm ảnh (URL) thất bại: ${getErrorMessage(e)}`);
             }
           }
         }
@@ -518,7 +554,7 @@ export default function ProductListPage() {
           try {
             await adminProductApi.removeSpec(editing.id, spec.id!);
           } catch (e) {
-            console.error('Lỗi xoá spec:', e);
+            imageErrors.push(`Xoá thông số thất bại: ${getErrorMessage(e)}`);
           }
         }
 
@@ -542,7 +578,7 @@ export default function ProductListPage() {
                   spec_unit: u ?? '',
                 });
               } catch (e) {
-                console.error('Lỗi sửa spec:', e);
+                imageErrors.push(`Sửa thông số thất bại: ${getErrorMessage(e)}`);
               }
             }
           } else {
@@ -554,12 +590,18 @@ export default function ProductListPage() {
                 spec_unit: u,
               });
             } catch (e) {
-              console.error('Lỗi thêm spec:', e);
+              imageErrors.push(`Thêm thông số thất bại: ${getErrorMessage(e)}`);
             }
           }
         }
 
-        message.success('Đã cập nhật sản phẩm');
+        if (imageErrors.length > 0) {
+          message.warning(
+            `Đã lưu sản phẩm nhưng có ${imageErrors.length} thao tác lỗi: ${imageErrors.join('; ')}`,
+          );
+        } else {
+          message.success('Đã cập nhật sản phẩm');
+        }
       } else {
         // --- Thêm sản phẩm mới ---
         const res = await adminProductApi.create({
@@ -567,24 +609,33 @@ export default function ProductListPage() {
           category_id: values.category_id,
           brand: values.brand?.trim() || '',
           price: values.price,
+          stock_quantity: values.stock_quantity ?? 0,
           description: values.description?.trim() || '',
           is_active: values.is_active,
         });
         productId = res.data.id;
+        const createErrors: string[] = [];
 
-        // Thêm các ảnh đã chọn
+        // Thêm các ảnh đã chọn (file upload HOẶC dán URL)
         for (let i = 0; i < modalImages.length; i++) {
           const img = modalImages[i];
-          if (img.file) {
-            try {
+          try {
+            if (img.file) {
               await adminProductApi.addImage(productId, {
                 file: img.file,
                 is_primary: img.is_primary,
                 sort_order: i,
               });
-            } catch (e) {
-              console.error('Lỗi tải ảnh khi tạo sản phẩm:', e);
+            } else {
+              // Ảnh dán bằng URL - trước đây bị bỏ sót, không gửi lên BE nên mất luôn sau khi lưu
+              await adminProductApi.addImage(productId, {
+                image_url: img.previewUrl,
+                is_primary: img.is_primary,
+                sort_order: i,
+              });
             }
+          } catch (e) {
+            createErrors.push(`Thêm ảnh thất bại: ${getErrorMessage(e)}`);
           }
         }
 
@@ -601,16 +652,23 @@ export default function ProductListPage() {
                 spec_unit: u,
               });
             } catch (e) {
-              console.error('Lỗi thêm thông số khi tạo sản phẩm:', e);
+              createErrors.push(`Thêm thông số thất bại: ${getErrorMessage(e)}`);
             }
           }
         }
 
-        message.success('Đã thêm sản phẩm mới thành công');
+        if (createErrors.length > 0) {
+          message.warning(
+            `Đã tạo sản phẩm nhưng có ${createErrors.length} thao tác lỗi: ${createErrors.join('; ')}`,
+          );
+        } else {
+          message.success('Đã thêm sản phẩm mới thành công');
+        }
       }
 
       setModalOpen(false);
       loadProducts();
+      loadBrands();
     } catch (err) {
       // Nếu API báo lỗi (hoặc đang chạy mode mẫu), cập nhật state local để xem được
       if (isSampleMode || editing?.id.startsWith('sample-')) {
@@ -620,19 +678,19 @@ export default function ProductListPage() {
             prev.map((item) =>
               item.id === editing.id
                 ? {
-                    ...item,
-                    name: values.name.trim(),
-                    price: values.price,
-                    description: values.description?.trim() || '',
-                    is_active: values.is_active,
-                    thumbnail: primaryImg || item.thumbnail,
-                    specs: modalSpecs.map((s, idx) => ({
-                      id: s.id || `sample-spec-${idx}`,
-                      spec_key: s.spec_key,
-                      spec_value: s.spec_value,
-                      spec_unit: s.spec_unit || null,
-                    })),
-                  }
+                  ...item,
+                  name: values.name.trim(),
+                  price: values.price,
+                  description: values.description?.trim() || '',
+                  is_active: values.is_active,
+                  thumbnail: primaryImg || item.thumbnail,
+                  specs: modalSpecs.map((s, idx) => ({
+                    id: s.id || `sample-spec-${idx}`,
+                    spec_key: s.spec_key,
+                    spec_value: s.spec_value,
+                    spec_unit: s.spec_unit || null,
+                  })),
+                }
                 : item,
             ),
           );
@@ -646,6 +704,7 @@ export default function ProductListPage() {
             category: categoryName,
             price: values.price,
             rating: null,
+            stock_quantity: values.stock_quantity ?? 0,
             is_active: values.is_active,
             description: values.description?.trim() || '',
             thumbnail: primaryImg || '#2b1b6f',
@@ -719,11 +778,19 @@ export default function ProductListPage() {
     {
       title: 'Rating',
       dataIndex: 'rating',
-      width: 130,
+      width: 110,
       render: (value: string | number | null) => (
         <span className="admin-product-rating">
           <StarFilled /> {value ?? '-'}
         </span>
+      ),
+    },
+    {
+      title: 'Tồn kho',
+      dataIndex: 'stock_quantity',
+      width: 110,
+      render: (value: number) => (
+        <Tag color={value > 0 ? 'blue' : 'red'}>{value ?? 0}</Tag>
       ),
     },
     {
@@ -825,6 +892,7 @@ export default function ProductListPage() {
         dataSource={items}
         loading={loading}
         className="admin-product-table"
+        scroll={{ x: 1100 }}
         pagination={{
           current: page,
           pageSize: PAGE_SIZE,
@@ -868,7 +936,7 @@ export default function ProductListPage() {
                       </Col>
                       <Col span={8}>
                         <Form.Item label="Thương hiệu" name="brand">
-                          <Input placeholder="Ví dụ: Apple" disabled={!!editing} />
+                          <Input placeholder="Ví dụ: Apple" />
                         </Form.Item>
                       </Col>
                     </Row>
@@ -900,6 +968,35 @@ export default function ProductListPage() {
                             formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                             parser={(value) => Number(value?.replace(/,/g, '') || 0)}
                           />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <Form.Item
+                          label="Số lượng tồn kho"
+                          name="stock_quantity"
+                          rules={[{ required: true, message: 'Nhập số lượng tồn kho' }]}
+                        >
+                          <InputNumber<number>
+                            min={0}
+                            style={{ width: '100%' }}
+                            placeholder="Ví dụ: 100"
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item label="Rating (0.0 – 5.0)">
+                          <Input
+                            readOnly
+                            disabled
+                            prefix={<StarFilled style={{ color: '#faad14' }} />}
+                            value={editing?.rating ? Number(editing.rating).toFixed(1) : 'Chưa có đánh giá'}
+                          />
+                          <div style={{ fontSize: 12, color: '#8b8f96', marginTop: 4 }}>
+                            Rating được tính tự động từ đánh giá của khách hàng, không thể sửa tay.
+                          </div>
                         </Form.Item>
                       </Col>
                     </Row>

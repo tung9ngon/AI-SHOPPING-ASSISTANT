@@ -167,21 +167,24 @@ export interface Order {
 }
 
 // ---- Discount code ----
-export type DiscountType = 'percent' | 'fixed_amount' | 'free_shipping';
+export type VoucherCategory = 'order' | 'free_shipping';
+export type DiscountType = 'percent' | 'fixed_amount';
 export interface DiscountCode {
   id: string;
   code: string;
   description: string | null;
+  category: VoucherCategory;
   discount_type: DiscountType;
   discount_value: number;
-  min_order_value: number;
+  min_order_value: number | null;
   max_discount: number | null;
   usage_limit: number | null;
   used_count?: number;
   valid_from: string | null;
   valid_until: string | null;
   is_active: boolean;
-  status?: 'running' | 'paused';
+  status?: 'running' | 'paused' | 'upcoming' | 'expired';
+  created_at?: string;
 }
 
 // ---- Price alert ----

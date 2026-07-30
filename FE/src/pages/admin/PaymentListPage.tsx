@@ -372,6 +372,7 @@ export default function PaymentListPage() {
         dataSource={items}
         loading={loading}
         className="admin-payment-table"
+        scroll={{ x: 900 }}
         pagination={{
           current: page,
           pageSize: PAGE_SIZE,

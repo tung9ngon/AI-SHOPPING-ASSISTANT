@@ -35,11 +35,17 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 @UseGuards(JwtAccessGuard, RolesGuard)
 @Roles('admin')
 export class AdminProductController {
-  constructor(private readonly adminProductService: AdminProductService) {}
+  constructor(private readonly adminProductService: AdminProductService) { }
 
   @Get()
   findAll(@Query() query: QueryAdminProductDto) {
     return this.adminProductService.findAll(query);
+  }
+
+  // GET /api/admin/products/brands
+  @Get('brands')
+  findAllBrands() {
+    return this.adminProductService.findAllBrands();
   }
 
   @Post()
@@ -58,27 +64,26 @@ export class AdminProductController {
   }
 
   // POST /api/admin/products/:id/images
-  // form-data: file (bắt buộc), is_primary (optional), sort_order (optional)
   @Post(':id/images')
   @UseInterceptors(FileInterceptor('file'))
   addImage(
     @Param('id') id: string,
     @UploadedFile(
       new ParseFilePipe({
+        fileIsRequired: false,
         validators: [
           new MaxFileSizeValidator({ maxSize: MAX_IMAGE_SIZE }),
           new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp|gif)$/ }),
         ],
       }),
     )
-    file: Express.Multer.File,
+    file: Express.Multer.File | undefined,
     @Body() dto: CreateProductImageDto,
   ) {
     return this.adminProductService.addImage(id, file, dto);
   }
 
   // PUT /api/admin/products/:id/images/:image_id
-  // form-data: file (optional - có thì thay ảnh), is_primary (optional), sort_order (optional)
   @Put(':id/images/:image_id')
   @UseInterceptors(FileInterceptor('file'))
   updateImage(

@@ -41,18 +41,18 @@ export class Product {
   @Column({ type: 'varchar', length: 100, nullable: true })
   brand: string | null;
 
-  // Giá hiện tại (VNĐ)
   @Column({ type: 'bigint' })
   price: number;
 
-  // 0.0 - 5.0
   @Column({ type: 'decimal', precision: 2, scale: 1, nullable: true })
   rating: string | null;
 
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
-  // Ẩn/hiện sản phẩm
+  @Column({ type: 'int', default: 0 })
+  stock_quantity: number;
+
   @Column({ type: 'boolean', default: true })
   is_active: boolean;
 
@@ -67,7 +67,7 @@ export class Product {
 
   @ManyToMany(() => Tag, (tag) => tag.products)
   @JoinTable({
-    name: 'product_tag_map', // tên bảng nối
+    name: 'product_tag_map',
     joinColumn: { name: 'product_id', referencedColumnName: 'id' },
     inverseJoinColumn: { name: 'tag_id', referencedColumnName: 'id' },
   })

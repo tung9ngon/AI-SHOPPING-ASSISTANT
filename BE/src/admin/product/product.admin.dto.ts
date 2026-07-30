@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsIn,
@@ -10,6 +10,12 @@ import {
   Min,
   MaxLength,
 } from 'class-validator';
+
+const toBoolean = ({ value }: { value: unknown }) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') return value.toLowerCase() === 'true';
+  return value;
+};
 
 // GET /api/admin/products
 export class QueryAdminProductDto {
@@ -26,7 +32,7 @@ export class QueryAdminProductDto {
   brand?: string;
 
   @IsOptional()
-  @Type(() => Boolean)
+  @Transform(toBoolean)
   @IsBoolean()
   isActive?: boolean;
 
@@ -72,6 +78,12 @@ export class CreateProductDto {
   description?: string;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  stock_quantity?: number = 0;
+
+  @IsOptional()
   @IsBoolean()
   is_active?: boolean = true;
 }
@@ -84,6 +96,11 @@ export class UpdateProductDto {
   name?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  brand?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(0)
@@ -94,6 +111,11 @@ export class UpdateProductDto {
   description?: string;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  stock_quantity?: number;
+  @IsOptional()
   @IsBoolean()
   is_active?: boolean;
 }
@@ -101,7 +123,12 @@ export class UpdateProductDto {
 // POST /api/admin/products/:id/images
 export class CreateProductImageDto {
   @IsOptional()
-  @Type(() => Boolean)
+  @IsString()
+  @MaxLength(2000)
+  image_url?: string;
+
+  @IsOptional()
+  @Transform(toBoolean)
   @IsBoolean()
   is_primary?: boolean = false;
 
@@ -114,7 +141,7 @@ export class CreateProductImageDto {
 // PUT /api/admin/products/:id/images/:image_id
 export class UpdateProductImageDto {
   @IsOptional()
-  @Type(() => Boolean)
+  @Transform(toBoolean)
   @IsBoolean()
   is_primary?: boolean;
 

@@ -1,17 +1,17 @@
 import api from './client';
+import type { DiscountType, VoucherCategory } from '../types';
 
-// discount_type ở BE gồm cả free_shipping (khác DiscountType trong types/index.ts
-// vốn chỉ mô tả voucher giảm tiền hàng), nên định nghĩa riêng ở đây.
-export type VoucherType = 'percent' | 'fixed_amount' | 'free_shipping';
+export type { VoucherCategory, DiscountType };
 
 // Khớp response POST /api/discount-codes/validate
 export interface ValidateDiscountResult {
   code: string;
-  discount_type?: VoucherType;
+  category?: VoucherCategory;
+  discount_type?: DiscountType;
   discount_value?: number | string;
   discount_amount: number; // số tiền được giảm (đã tính, làm tròn)
   min_order_value?: number | string | null;
-  max_discount?: number | string | null; // trần giảm với mã percent (cần để FE tính lại đúng)
+  max_discount?: number | string | null; // trần giảm với mã percent
   is_valid: boolean;
   message?: string; // lý do không hợp lệ (nếu có)
 }
@@ -20,7 +20,8 @@ export interface ValidateDiscountResult {
 export interface Voucher {
   code: string;
   description: string | null;
-  discount_type: VoucherType;
+  category: VoucherCategory;
+  discount_type: DiscountType;
   discount_value: number | string;
   min_order_value: number | string | null;
   max_discount: number | string | null;
@@ -50,16 +51,16 @@ export const discountApi = {
       ...(shipping_fee !== undefined ? { shipping_fee } : {}),
     }),
 
-  // Danh sách voucher giảm tiền hàng (percent / fixed_amount)
+  // Danh sách voucher giảm tiền hàng (category = order)
   list: (params?: ListVoucherParams) =>
     api.get<VoucherListResult>('/discount-codes', { params }),
 
-  // Danh sách voucher miễn phí vận chuyển (free_shipping)
+  // Danh sách voucher miễn phí vận chuyển (category = free_shipping)
   listFreeship: (params?: ListVoucherParams) =>
     api.get<VoucherListResult>('/discount-codes/freeship', { params }),
 };
 
-// ===== Helpers tính toán phía FE (BE vẫn tính lại khi tạo đơn) =====
+// ===== Helpers tính toán phía FE =====
 
 // Số tiền voucher được giảm, khớp logic order.service.ts của BE.
 export function calcVoucherAmount(
@@ -68,17 +69,21 @@ export function calcVoucherAmount(
   shippingFee: number,
 ): number {
   const value = Number(v.discount_value);
+  const isFreeship = v.category === 'free_shipping';
+  const targetBase = isFreeship ? shippingFee : subtotal;
+
+  let amt = 0;
   if (v.discount_type === 'percent') {
-    let amt = (subtotal * value) / 100;
-    if (v.max_discount != null) amt = Math.min(amt, Number(v.max_discount));
-    return Math.round(Math.min(amt, subtotal));
+    amt = (targetBase * value) / 100;
+    if (v.max_discount != null) {
+      amt = Math.min(amt, Number(v.max_discount));
+    }
+  } else {
+    // fixed_amount
+    amt = value;
   }
-  if (v.discount_type === 'free_shipping') {
-    // Chỉ trừ vào phí ship
-    return Math.round(Math.min(value, shippingFee));
-  }
-  // fixed_amount: trừ thẳng tiền hàng
-  return Math.round(Math.min(value, subtotal));
+
+  return Math.round(Math.min(amt, targetBase));
 }
 
 // Đơn hiện tại đã đủ điều kiện dùng voucher chưa
