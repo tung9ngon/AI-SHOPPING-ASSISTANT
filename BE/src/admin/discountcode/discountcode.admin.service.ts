@@ -117,6 +117,8 @@ export class AdminDiscountCodeService {
       usage_limit: dto.usage_limit ?? null,
       valid_from: dto.valid_from ? new Date(dto.valid_from) : undefined,
       valid_until: dto.valid_until ? new Date(dto.valid_until) : null,
+      // Cho phép tạo mã ở trạng thái tắt sẵn; mặc định bật nếu FE không gửi.
+      is_active: dto.is_active ?? undefined,
     });
     const saved = await this.discountRepo.save(discount);
 

@@ -376,7 +376,10 @@ export default function OrderListPage() {
         prev.map((item) => (item.id === orderId ? { ...item, status: newStatus } : item)),
       );
     } catch (err) {
-      if (isSampleMode || orderId.startsWith('sample-') || orderId.length <= 8) {
+      // Chỉ giả lập cập nhật khi thực sự đang ở chế độ dữ liệu mẫu (API list đã lỗi)
+      // hoặc id là mẫu ("sample-..."). KHÔNG suy đoán qua độ dài id vì id đơn thật
+      // có thể ngắn -> tránh nuốt lỗi API thật thành "thành công (mẫu)".
+      if (isSampleMode || orderId.startsWith('sample-')) {
         setItems((prev) =>
           prev.map((item) => (item.id === orderId ? { ...item, status: newStatus } : item)),
         );
