@@ -13,5 +13,6 @@ import { CartController } from './cart.controller ';
   ],
   controllers: [CartController],
   providers: [CartService],
+  exports: [CartService], // ChatModule dùng để trợ lý AI đọc giỏ hàng
 })
 export class CartModule {}

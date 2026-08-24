@@ -3,9 +3,11 @@ import { ConfigModule } from '@nestjs/config';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 import { ProductModule } from '../product/product.module';
+import { CartModule } from '../cart/cart.module';
 
 @Module({
-  imports: [ConfigModule, ProductModule], // ProductModule export ProductService
+  // ProductModule export ProductService, CartModule export CartService.
+  imports: [ConfigModule, ProductModule, CartModule],
   controllers: [ChatController],
   providers: [ChatService],
 })
