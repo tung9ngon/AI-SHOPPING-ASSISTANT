@@ -7,6 +7,7 @@ import {
   HomeOutlined,
   ProfileOutlined,
   ShoppingOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -42,6 +43,11 @@ const menuItems = [
     icon: <CreditCardOutlined />,
     label: <Link to="/admin/payments">Thanh toán</Link>,
   },
+  {
+    key: '/admin/users',
+    icon: <TeamOutlined />,
+    label: <Link to="/admin/users">Người dùng</Link>,
+  },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -51,6 +57,7 @@ const pageTitles: Record<string, string> = {
   '/admin/orders': 'Quản lý đơn hàng',
   '/admin/discounts': 'Quản lý mã giảm giá',
   '/admin/payments': 'Quản lý thanh toán',
+  '/admin/users': 'Quản lý người dùng',
 };
 
 function selectedMenuKey(pathname: string) {

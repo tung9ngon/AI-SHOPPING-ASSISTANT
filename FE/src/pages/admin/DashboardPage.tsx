@@ -32,7 +32,26 @@ interface StatCardProps {
 
 const MONTH_LABELS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
 
-const FALLBACK_REVENUE = [42, 66, 59, 83, 75, 96, 90, 102, 94, 77, 88, 101];
+interface RevenuePoint {
+  label: string;
+  revenue: number;
+  orders: number;
+}
+
+const FALLBACK_REVENUE: RevenuePoint[] = [
+  { label: 'T1', revenue: 42_000_000, orders: 21 },
+  { label: 'T2', revenue: 66_000_000, orders: 30 },
+  { label: 'T3', revenue: 59_000_000, orders: 27 },
+  { label: 'T4', revenue: 83_000_000, orders: 38 },
+  { label: 'T5', revenue: 75_000_000, orders: 34 },
+  { label: 'T6', revenue: 96_000_000, orders: 45 },
+  { label: 'T7', revenue: 90_000_000, orders: 41 },
+  { label: 'T8', revenue: 102_000_000, orders: 47 },
+  { label: 'T9', revenue: 94_000_000, orders: 43 },
+  { label: 'T10', revenue: 77_000_000, orders: 35 },
+  { label: 'T11', revenue: 88_000_000, orders: 40 },
+  { label: 'T12', revenue: 101_000_000, orders: 46 },
+];
 
 const FALLBACK_OVERVIEW: AdminOverviewStats = {
   total_orders: 1240,
@@ -110,6 +129,15 @@ function compactRevenue(value: number) {
   return formatVND(value);
 }
 
+/** Làm tròn trần lên mốc "đẹp" (1 / 2 / 2.5 / 5 / 10 x 10^n) để chia lưới trục Y. */
+function niceMax(value: number) {
+  if (value <= 0) return 1_000_000;
+  const base = 10 ** Math.floor(Math.log10(value));
+  const ratio = value / base;
+  const step = ratio <= 1 ? 1 : ratio <= 2 ? 2 : ratio <= 2.5 ? 2.5 : ratio <= 5 ? 5 : 10;
+  return step * base;
+}
+
 function shortOrderId(id: string) {
   return `#${id.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
 }
@@ -144,6 +172,7 @@ export default function DashboardPage() {
   const [orders, setOrders] = useState<AdminOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<string[]>([]);
+  const [activeBar, setActiveBar] = useState<number | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -198,23 +227,29 @@ export default function DashboardPage() {
     };
   }, []);
 
-  const chartValues = useMemo(() => {
+  const chartData = useMemo<RevenuePoint[]>(() => {
     if (!revenue) return FALLBACK_REVENUE;
-    if (!revenue.items.length) return MONTH_LABELS.map(() => 0);
 
-    const byMonth = new Map<number, number>();
+    const byMonth = new Map<number, { revenue: number; orders: number }>();
     revenue.items.forEach((item) => {
       const month = new Date(item.period).getMonth();
-      if (!Number.isNaN(month)) byMonth.set(month, item.revenue);
+      if (!Number.isNaN(month)) byMonth.set(month, { revenue: item.revenue, orders: item.order_count });
     });
-    return MONTH_LABELS.map((_, index) => byMonth.get(index) ?? 0);
+    return MONTH_LABELS.map((label, index) => ({
+      label,
+      revenue: byMonth.get(index)?.revenue ?? 0,
+      orders: byMonth.get(index)?.orders ?? 0,
+    }));
   }, [revenue]);
 
   const dashboardOverview = overview ?? FALLBACK_OVERVIEW;
   const usingOverviewFallback = !overview;
   const usingRevenueFallback = !revenue;
   const usingOrdersFallback = orders.length === 0 && errors.some((item) => item.startsWith('Đơn mới:'));
-  const maxRevenue = Math.max(...chartValues, 0);
+  const maxRevenue = Math.max(...chartData.map((item) => item.revenue), 0);
+  const axisMax = niceMax(maxRevenue);
+  const axisTicks = [1, 0.75, 0.5, 0.25, 0].map((ratio) => axisMax * ratio);
+  const chartTotal = chartData.reduce((sum, item) => sum + item.revenue, 0);
   const displayedOrders = orders.length ? orders : FALLBACK_ORDERS;
   const orderTotal = dashboardOverview.orders_by_status.reduce((sum, item) => sum + item.count, 0);
 
@@ -304,31 +339,84 @@ export default function DashboardPage() {
 
       <div className="admin-analytics-grid">
         <section className="admin-panel admin-revenue-panel">
-          <h2>Doanh thu theo tháng</h2>
-          <div className="admin-bar-chart">
-            {chartValues.map((value, index) => (
-              <div className="admin-bar-item" key={MONTH_LABELS[index]}>
-                <div
-                  className="admin-bar"
-                  style={{ height: maxRevenue > 0 ? `${Math.max(18, (value / maxRevenue) * 100)}%` : 0 }}
-                  title={formatVND(value)}
-                />
-                <span>{MONTH_LABELS[index]}</span>
+          <div className="admin-panel-head">
+            <div>
+              <h2>Doanh thu theo tháng</h2>
+              <span className="admin-panel-sub">Cả năm: {compactRevenue(chartTotal)}</span>
+            </div>
+            <span className="admin-panel-tip">Di chuột / chạm vào cột để xem chi tiết</span>
+          </div>
+
+          <div className="admin-chart">
+            <div className="admin-chart-axis">
+              {axisTicks.map((tick, index) => (
+                <span key={index}>{compactRevenue(tick)}</span>
+              ))}
+            </div>
+            <div className={`admin-chart-plot${activeBar !== null ? ' is-focused' : ''}`}>
+              <div className="admin-chart-grid">
+                {axisTicks.map((_, index) => (
+                  <i key={index} />
+                ))}
               </div>
-            ))}
+              <div className="admin-chart-cols">
+                {chartData.map((point, index) => (
+                  <button
+                    type="button"
+                    key={point.label}
+                    className={`admin-chart-col${activeBar === index ? ' is-on' : ''}`}
+                    onPointerEnter={() => setActiveBar(index)}
+                    onPointerLeave={() => setActiveBar((current) => (current === index ? null : current))}
+                    onFocus={() => setActiveBar(index)}
+                    onBlur={() => setActiveBar((current) => (current === index ? null : current))}
+                    onClick={() => setActiveBar((current) => (current === index ? null : index))}
+                  >
+                    <span className="admin-chart-wash" />
+                    <span
+                      className="admin-chart-bar"
+                      style={{ height: axisMax > 0 ? `${(point.revenue / axisMax) * 100}%` : '0%' }}
+                    >
+                      {activeBar === index && (
+                        <span
+                          className={`admin-chart-tip${index < 2 ? ' is-start' : ''}${
+                            index > chartData.length - 3 ? ' is-end' : ''
+                          }`}
+                          role="tooltip"
+                        >
+                          <span className="admin-chart-tip-title">Tháng {index + 1}</span>
+                          <span className="admin-chart-tip-value">{formatVND(point.revenue)}</span>
+                          <span className="admin-chart-tip-meta">
+                            {point.orders.toLocaleString('vi-VN')} đơn
+                          </span>
+                        </span>
+                      )}
+                    </span>
+                    <span className="admin-chart-label">{point.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           {usingRevenueFallback && <div className="admin-panel-hint">Biểu đồ đang dùng dữ liệu mẫu.</div>}
         </section>
 
         <section className="admin-panel admin-status-panel">
-          <h2>Đơn theo trạng thái</h2>
+          <div className="admin-panel-head">
+            <div>
+              <h2>Đơn theo trạng thái</h2>
+              <span className="admin-panel-sub">{orderTotal.toLocaleString('vi-VN')} đơn</span>
+            </div>
+          </div>
           <div className="admin-status-list">
             {statusRows.map((item) => (
-              <div className="admin-status-row" key={item.status}>
+              <div className="admin-status-row" key={item.status} tabIndex={0}>
                 <div className="admin-status-label">
-                  <span>{item.label}</span>
                   <span>
-                    {item.count.toLocaleString('vi-VN')} · {item.percent}%
+                    <i className="admin-status-dot" style={{ background: item.color }} />
+                    {item.label}
+                  </span>
+                  <span>
+                    <strong>{item.count.toLocaleString('vi-VN')}</strong> · {item.percent}%
                   </span>
                 </div>
                 <div className="admin-status-track">

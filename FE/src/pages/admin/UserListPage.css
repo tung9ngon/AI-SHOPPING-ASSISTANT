@@ -1,0 +1,133 @@
+.admin-user-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-user-note {
+  padding: 10px 14px;
+  border: 1px solid #ffccc7;
+  border-radius: 8px;
+  background: #fff2f0;
+  color: #a8071a;
+  font-size: 13px;
+}
+
+.admin-user-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-user-search {
+  width: 340px;
+}
+
+.admin-user-select {
+  width: 170px;
+}
+
+.admin-user-table {
+  overflow: hidden;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.admin-user-table .ant-table-thead > tr > th {
+  height: 38px;
+  border-bottom: 1px solid #f1f1f1;
+  background: #fafafa;
+  color: #8b8f96;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.admin-user-table .ant-table-tbody > tr > td {
+  height: 54px;
+  border-bottom: 1px solid #f2f2f2;
+  color: #24272d;
+}
+
+.admin-user-table .ant-table-tbody > tr:last-child > td {
+  border-bottom: 0;
+}
+
+.admin-user-table .ant-table-cell::before {
+  display: none;
+}
+
+.admin-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-user-cell-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.admin-user-name {
+  font-weight: 500;
+}
+
+.admin-user-email {
+  overflow: hidden;
+  color: #8b8f96;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-user-date {
+  color: #8b8f96;
+}
+
+.admin-user-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.admin-user-actions .ant-btn {
+  height: auto;
+  padding: 0 4px;
+}
+
+.admin-user-modal-loading {
+  display: grid;
+  place-items: center;
+  padding: 40px 0;
+}
+
+.admin-user-modal-error {
+  padding: 12px 0;
+  color: #a8071a;
+}
+
+.admin-user-modal-section {
+  margin: 20px 0 10px;
+  font-weight: 600;
+}
+
+.admin-user-modal-empty {
+  padding: 12px 14px;
+  border: 1px dashed #e5e7eb;
+  border-radius: 8px;
+  color: #8b8f96;
+  font-size: 13px;
+}
+
+@media (max-width: 760px) {
+  .admin-user-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-user-search,
+  .admin-user-select {
+    width: 100%;
+  }
+}

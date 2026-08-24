@@ -31,6 +31,7 @@ const ProductListPage = lazy(() => import('./pages/admin/ProductListPage'));
 const OrderListPage = lazy(() => import('./pages/admin/OrderListPage'));
 const DiscountListPage = lazy(() => import('./pages/admin/DiscountListPage'));
 const PaymentListPage = lazy(() => import('./pages/admin/PaymentListPage'));
+const UserListPage = lazy(() => import('./pages/admin/UserListPage'));
 
 function PageFallback() {
   return (
@@ -130,6 +131,7 @@ export default function App() {
           <Route path="orders" element={<OrderListPage />} />
           <Route path="discounts" element={<DiscountListPage />} />
           <Route path="payments" element={<PaymentListPage />} />
+          <Route path="users" element={<UserListPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

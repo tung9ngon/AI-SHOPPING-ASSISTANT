@@ -23,6 +23,7 @@ import { ChatModule } from './users/chat/chat.module';
 import { AddressModule } from './users/address/address.module'
 import { ProfileModule } from './users/profile/profile.module';
 import { AdminStatisticsModule } from './admin/statistics/statistics.admin.module';
+import { ProfileAdminModule } from './admin/profile/profile.admin.module';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { AdminStatisticsModule } from './admin/statistics/statistics.admin.modul
     AddressModule,
     ProfileModule,
     AdminStatisticsModule,
+    ProfileAdminModule,
   ],
 })
 class AppModule {}

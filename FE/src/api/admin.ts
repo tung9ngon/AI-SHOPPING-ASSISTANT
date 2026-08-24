@@ -9,6 +9,8 @@ import type {
   PaymentMethod,
   PaymentStatus,
   Product,
+  ShoppingProfile,
+  UserRole,
 } from '../types';
 
 // ===== Admin: Categories =====
@@ -198,6 +200,41 @@ export const adminPaymentApi = {
   detail: (id: string) => api.get<Payment>(`/admin/payments/${id}`),
   confirmCod: (id: string) =>
     api.post<Payment>(`/admin/payments/${id}/confirm-cod`, {}),
+};
+
+// ===== Admin: Users =====
+// Ánh xạ theo PUBLIC_USER_SELECT của profile.admin.service.ts.
+export interface AdminUserRow {
+  id: string;
+  full_name: string;
+  email: string | null;
+  phone_number: string | null;
+  avatar_url: string | null;
+  role: UserRole;
+  is_active: boolean;
+  created_at: string;
+}
+
+// GET /admin/users/:id trả thêm hồ sơ mua sắm (null nếu user chưa có profile).
+export interface AdminUserDetail extends AdminUserRow {
+  profile: ShoppingProfile | null;
+}
+
+export const adminUserApi = {
+  list: (params?: {
+    search?: string;
+    role?: UserRole;
+    is_active?: boolean;
+    page?: number;
+    limit?: number;
+  }) => api.get<Paginated<AdminUserRow>>('/admin/users', { params }),
+  detail: (id: string) => api.get<AdminUserDetail>(`/admin/users/${id}`),
+  // BE chỉ nhận role và is_active; các trường khác bị DTO loại bỏ.
+  update: (id: string, data: { role?: UserRole; is_active?: boolean }) =>
+    api.put<{ id: string; role: UserRole; is_active: boolean; updated_at: string }>(
+      `/admin/users/${id}`,
+      data,
+    ),
 };
 
 // ===== Admin: Statistics =====
