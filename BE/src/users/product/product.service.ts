@@ -19,6 +19,19 @@ import { User } from '../../database/user.entity';
 
 const COMPLETED_ORDER_STATUS: OrderStatus = 'paid';
 
+// Từ vô nghĩa trong câu hỏi mua sắm - bỏ đi trước khi tra cứu cho trợ lý AI.
+// Gồm cả đơn vị tiền vì khoảng giá đã đi theo tham số minPrice/maxPrice riêng.
+// Cố ý KHÔNG bỏ 'đồng': 'đồng hồ' là một danh mục hàng thật của shop.
+const ASSISTANT_STOPWORDS = new Set([
+  'cho', 'của', 'và', 'có', 'là', 'ở', 'với', 'thì', 'mà', 'những', 'các',
+  'một', 'cái', 'gì', 'nào', 'không', 'được', 'khoảng', 'tầm', 'dưới', 'trên',
+  'giá', 'mua', 'tìm', 'cần', 'muốn', 'giúp', 'tôi', 'mình', 'bạn', 'em',
+  'anh', 'chị', 'hãng', 'loại', 'sản', 'phẩm', 'nhu', 'cầu', 'ạ', 'nhé',
+  'xin', 'chào', 'về', 'để', 'khi', 'nếu', 'hơn', 'nhất', 'rất', 'hay',
+  'hoặc', 'trong', 'ngoài', 'này', 'kia', 'đó', 'nữa', 'thêm', 'làm',
+  'triệu', 'nghìn', 'ngàn', 'vnđ', 'vnd',
+]);
+
 @Injectable()
 export class ProductService {
   constructor(
@@ -126,6 +139,170 @@ export class ProductService {
       .orderBy('product.brand', 'ASC')
       .getRawMany<{ brand: string }>();
     return rows.map((r) => r.brand);
+  }
+
+  // ---------- Tra cứu riêng cho trợ lý AI ----------
+  /**
+   * Tìm sản phẩm cho trợ lý AI. Khác findAll ở ba điểm:
+   * - Tách câu hỏi thành từ khoá và bỏ từ vô nghĩa. AI hay truyền nguyên cụm
+   *   ("laptop cho sinh viên"); ILIKE nguyên cụm trên tên thì gần như luôn rỗng.
+   * - Mỗi từ khoá dò trên tên, hãng, mô tả, tên danh mục và tag.
+   * - Khớp-tất-cả ra rỗng thì nới thành khớp-bất-kỳ, để còn thứ mà tư vấn.
+   */
+  async searchForAssistant(args: {
+    query?: string;
+    brand?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    limit?: number;
+  }) {
+    const tokens = this.tokenizeQuery(args.query);
+    const items = await this.runAssistantSearch(tokens, args, 'all');
+    if (items.length > 0 || tokens.length < 2) return items;
+    return this.runAssistantSearch(tokens, args, 'any');
+  }
+
+  private tokenizeQuery(query?: string): string[] {
+    if (!query) return [];
+    const words = query
+      .toLowerCase()
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter(
+        (w) =>
+          w.length > 1 && !/^\d+$/.test(w) && !ASSISTANT_STOPWORDS.has(w),
+      );
+    return [...new Set(words)];
+  }
+
+  private async runAssistantSearch(
+    tokens: string[],
+    args: {
+      brand?: string;
+      minPrice?: number;
+      maxPrice?: number;
+      limit?: number;
+    },
+    mode: 'all' | 'any',
+  ) {
+    const qb = this.productRepo
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.tags', 'tags')
+      .leftJoinAndSelect(
+        'product.images',
+        'primaryImage',
+        'primaryImage.is_primary = true',
+      )
+      .where('product.is_active = true');
+
+    if (tokens.length) {
+      // Tag dò bằng EXISTS chứ không join: join kèm điều kiện sẽ cắt mất các
+      // tag không khớp từ khoá, làm 'tags' trả về bị thiếu.
+      const clauses = tokens.map(
+        (_, i) =>
+          `(product.name ILIKE :kw${i} OR product.brand ILIKE :kw${i}` +
+          ` OR product.description ILIKE :kw${i} OR category.name ILIKE :kw${i}` +
+          ` OR EXISTS (SELECT 1 FROM product_tag_map map` +
+          ` JOIN tags tag ON tag.id = map.tag_id` +
+          ` WHERE map.product_id = product.id AND tag.name ILIKE :kw${i}))`,
+      );
+      const params = Object.fromEntries(
+        tokens.map((t, i) => [`kw${i}`, `%${t}%`]),
+      );
+      qb.andWhere(`(${clauses.join(mode === 'all' ? ' AND ' : ' OR ')})`, params);
+    }
+
+    if (args.brand) {
+      qb.andWhere('product.brand ILIKE :brand', { brand: `%${args.brand}%` });
+    }
+    if (args.minPrice !== undefined) {
+      qb.andWhere('product.price >= :minPrice', { minPrice: args.minPrice });
+    }
+    if (args.maxPrice !== undefined) {
+      qb.andWhere('product.price <= :maxPrice', { maxPrice: args.maxPrice });
+    }
+
+    const limit = args.limit ?? 6;
+    const products = await qb
+      .orderBy('product.rating', 'DESC', 'NULLS LAST')
+      // Chế độ nới lỏng lấy rộng hơn rồi mới xếp lại theo độ khớp.
+      .take(mode === 'all' ? limit : limit * 10)
+      .getMany();
+
+    if (mode === 'any') {
+      // Khớp-bất-kỳ mà chỉ xếp theo rating thì "đồng hồ thông minh" sẽ ra
+      // laptop, chỉ vì mô tả laptop có chữ "thông". Ưu tiên khớp nhiều từ hơn.
+      products.sort(
+        (a, b) => this.matchScore(b, tokens) - this.matchScore(a, tokens),
+      );
+    }
+
+    return products.slice(0, limit).map((p) => this.toListItem(p));
+  }
+
+  /**
+   * Điểm khớp của một sản phẩm với bộ từ khoá.
+   * Khớp ở tên/hãng/danh mục/tag tính gấp đôi khớp trong mô tả: mô tả là văn bản
+   * dài nên hay khớp nhầm ("đồng thời", "thông minh" trong mô tả một cái laptop
+   * đủ để nó đè cả cái đồng hồ thật khi khách hỏi "đồng hồ thông minh").
+   */
+  private matchScore(p: Product, tokens: string[]): number {
+    const strong = [
+      p.name,
+      p.brand,
+      p.category?.name,
+      ...(p.tags?.map((t) => t.name) ?? []),
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    const description = (p.description ?? '').toLowerCase();
+
+    return tokens.reduce(
+      (score, t) =>
+        score + (strong.includes(t) ? 2 : 0) + (description.includes(t) ? 1 : 0),
+      0,
+    );
+  }
+
+  /** Sản phẩm khách đã mua (đơn đã thanh toán) - để trợ lý AI tư vấn theo lịch sử. */
+  async findPurchasedByUser(userId: string, limit = 10) {
+    const rows = await this.orderItemRepo
+      .createQueryBuilder('item')
+      .innerJoinAndSelect('item.order', 'order')
+      .innerJoinAndSelect('item.product', 'product')
+      .leftJoinAndSelect('product.category', 'category')
+      .where('order.user_id = :userId', { userId })
+      .andWhere('order.status = :status', { status: COMPLETED_ORDER_STATUS })
+      .orderBy('order.created_at', 'DESC')
+      .take(limit * 3)
+      .getMany();
+
+    // Một sản phẩm có thể nằm trong nhiều đơn - chỉ giữ lần mua gần nhất.
+    const seen = new Set<string>();
+    const purchased: {
+      id: string;
+      name: string;
+      brand: string | null;
+      price: number;
+      category_name: string | null;
+      quantity: number;
+    }[] = [];
+
+    for (const row of rows) {
+      if (seen.has(row.product_id)) continue;
+      seen.add(row.product_id);
+      purchased.push({
+        id: row.product.id,
+        name: row.product.name,
+        brand: row.product.brand,
+        price: row.product.price,
+        category_name: row.product.category?.name ?? null,
+        quantity: row.quantity,
+      });
+      if (purchased.length >= limit) break;
+    }
+    return purchased;
   }
 
   // ---------- GET /api/products/:id ----------
