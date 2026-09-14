@@ -127,7 +127,8 @@ export default function ChatWidget() {
               msg.type === 'products' ? (
                 <div className="chat-products" key={i}>
                   {msg.items.map((p) => (
-                    <div
+                    <button
+                      type="button"
                       className="chat-product"
                       key={p.id}
                       onClick={() => {
@@ -142,11 +143,11 @@ export default function ChatWidget() {
                           <PictureOutlined />
                         </div>
                       )}
-                      <div style={{ minWidth: 0 }}>
-                        <div className="chat-product__name">{p.name}</div>
-                        <div className="chat-product__price">{formatVND(p.price)}</div>
-                      </div>
-                    </div>
+                      <span style={{ minWidth: 0 }}>
+                        <span className="chat-product__name">{p.name}</span>
+                        <span className="chat-product__price">{formatVND(p.price)}</span>
+                      </span>
+                    </button>
                   ))}
                 </div>
               ) : (

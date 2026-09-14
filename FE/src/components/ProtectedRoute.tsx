@@ -15,7 +15,7 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
     return (
       <div style={{ textAlign: 'center', padding: '80px 0' }}>
         <Spin size="large" />
-        <div style={{ marginTop: 16, color: '#888' }}>Đang kiểm tra phiên đăng nhập...</div>
+        <div style={{ marginTop: 16, color: 'var(--color-text-muted)' }}>Đang kiểm tra phiên đăng nhập...</div>
       </div>
     );
   }

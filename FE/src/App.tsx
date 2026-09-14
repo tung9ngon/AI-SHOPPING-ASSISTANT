@@ -23,6 +23,10 @@ const OrdersPage = lazy(() => import('./pages/orders/OrdersPage'));
 const OrderDetailPage = lazy(() => import('./pages/orders/OrderDetailPage'));
 const PriceAlertsPage = lazy(() => import('./pages/pricealerts/PriceAlertsPage'));
 
+// Khung khu tài khoản: thanh điều hướng dùng chung cho hồ sơ / đơn hàng /
+// sổ địa chỉ / theo dõi giá.
+const AccountLayout = lazy(() => import('./layouts/AccountLayout'));
+
 // Cụm quản trị: tách hẳn khỏi bundle người dùng — khách mua hàng không bao giờ tải.
 const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
 const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'));
@@ -68,46 +72,21 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          {/* Khu tài khoản — một lớp ProtectedRoute duy nhất bọc cả cụm, thay vì
+              lặp lại ở từng tuyến như trước. */}
           <Route
-            path="/orders"
             element={
               <ProtectedRoute>
-                <OrdersPage />
+                <AccountLayout />
               </ProtectedRoute>
             }
-          />
-          <Route
-            path="/orders/:id"
-            element={
-              <ProtectedRoute>
-                <OrderDetailPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/price-alerts"
-            element={
-              <ProtectedRoute>
-                <PriceAlertsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/account/profile"
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/account/addresses"
-            element={
-              <ProtectedRoute>
-                <AddressBookPage />
-              </ProtectedRoute>
-            }
-          />
+          >
+            <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/orders/:id" element={<OrderDetailPage />} />
+            <Route path="/price-alerts" element={<PriceAlertsPage />} />
+            <Route path="/account/profile" element={<ProfilePage />} />
+            <Route path="/account/addresses" element={<AddressBookPage />} />
+          </Route>
           <Route path="/payment/payos-callback" element={<PayosCallbackPage />} />
         </Route>
 

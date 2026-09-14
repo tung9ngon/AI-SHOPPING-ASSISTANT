@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Col, Empty, Row, Skeleton, Card } from 'antd';
+import { Alert, Button, Col, Empty, Row, Skeleton } from 'antd';
 import {
-  ArrowRightOutlined,
   AppstoreOutlined,
-  ThunderboltOutlined,
-  SafetyCertificateOutlined,
+  ArrowRightOutlined,
   BellOutlined,
   CustomerServiceOutlined,
-  FireOutlined,
+  RobotOutlined,
+  SafetyCertificateOutlined,
+  TagOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { categoryApi } from '../../api/categories';
@@ -15,41 +16,15 @@ import { productApi, type ProductListItem } from '../../api/products';
 import { getItems, type Category } from '../../types';
 import ProductCard from '../../components/ProductCard';
 import ScrollReveal from '../../components/ScrollReveal';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import './HomePage.css';
 
-// Icon danh mục: emoji hoặc URL ảnh.
+// Icon danh mục: backend trả về emoji hoặc URL ảnh.
 function CategoryIcon({ icon }: { icon: string | null }) {
   if (icon && /^https?:\/\//.test(icon)) {
-    return <img src={icon} alt="" />;
+    return <img src={icon} alt="" loading="lazy" />;
   }
-  return <span>{icon || <AppstoreOutlined />}</span>;
-}
-
-// Đồng hồ đếm ngược tới hết ngày.
-function DealCountdown() {
-  const calc = () => {
-    const now = new Date();
-    const end = new Date(now);
-    end.setHours(24, 0, 0, 0);
-    const diff = Math.max(0, end.getTime() - now.getTime());
-    return {
-      h: Math.floor(diff / 3_600_000),
-      m: Math.floor((diff % 3_600_000) / 60_000),
-      s: Math.floor((diff % 60_000) / 1000),
-    };
-  };
-  const [t, setT] = useState(calc);
-  useEffect(() => {
-    const id = setInterval(() => setT(calc), 1000);
-    return () => clearInterval(id);
-  }, []);
-  const p = (n: number) => String(n).padStart(2, '0');
-  return (
-    <div className="home-countdown">
-      <span>Kết thúc sau</span>
-      <b>{p(t.h)}</b>:<b>{p(t.m)}</b>:<b>{p(t.s)}</b>
-    </div>
-  );
+  return <span aria-hidden="true">{icon || <AppstoreOutlined />}</span>;
 }
 
 // Mặt trống đồng Đông Sơn cách điệu: mặt trời 14 tia ở tâm, các vành hoa văn
@@ -70,7 +45,7 @@ function DongSonDrum() {
     return d + 'Z';
   };
 
-  // Một con chim Lạc cách điệu, hướng bay sang trái (theo chiều kim đồng hồ ngược).
+  // Một con chim Lạc cách điệu, hướng bay sang trái.
   const bird = (
     <g fill="currentColor">
       <polygon points="-25,-9 -13,-4 -14,-2" /> {/* mỏ */}
@@ -88,9 +63,8 @@ function DongSonDrum() {
   const dotRadius = 108;
 
   return (
-    <div className="home-hero__drum" aria-hidden="true">
+    <div className="hero__drum" aria-hidden="true">
       <svg viewBox="0 0 440 440">
-        {/* Các vành trơn */}
         <circle cx={C} cy={C} r="205" fill="none" stroke="currentColor" strokeWidth="2" />
         <circle cx={C} cy={C} r="196" fill="none" stroke="currentColor" strokeWidth="1" />
         <circle cx={C} cy={C} r="130" fill="none" stroke="currentColor" strokeWidth="1.5" />
@@ -123,15 +97,13 @@ function DongSonDrum() {
         {/* Vành tia ngắn quanh mặt trời */}
         {Array.from({ length: 28 }).map((_, i) => {
           const a = ((Math.PI * 2) / 28) * i;
-          const r1 = 60;
-          const r2 = 78;
           return (
             <line
               key={`r${i}`}
-              x1={C + r1 * Math.cos(a)}
-              y1={C + r1 * Math.sin(a)}
-              x2={C + r2 * Math.cos(a)}
-              y2={C + r2 * Math.sin(a)}
+              x1={C + 60 * Math.cos(a)}
+              y1={C + 60 * Math.sin(a)}
+              x2={C + 78 * Math.cos(a)}
+              y2={C + 78 * Math.sin(a)}
               stroke="currentColor"
               strokeWidth="1.5"
             />
@@ -140,23 +112,27 @@ function DongSonDrum() {
 
         {/* Mặt trời 14 tia ở tâm */}
         <path d={star(14, 54, 20)} fill="currentColor" />
-        <circle cx={C} cy={C} r="12" fill="none" stroke="#1a1a2e" strokeWidth="2.5" />
+        <circle cx={C} cy={C} r="12" fill="none" stroke="var(--ink-900)" strokeWidth="2.5" />
       </svg>
     </div>
   );
 }
 
-const FEATURES = [
-  { icon: <ThunderboltOutlined />, title: 'Giao hàng hoả tốc', desc: 'Nội thành 2 giờ' },
+const COMMITMENTS = [
+  { icon: <ThunderboltOutlined />, title: 'Giao hàng hoả tốc', desc: 'Nội thành trong 2 giờ' },
   { icon: <SafetyCertificateOutlined />, title: 'Chính hãng 100%', desc: 'Bảo hành toàn quốc' },
-  { icon: <BellOutlined />, title: 'Theo dõi giá', desc: 'Báo khi giảm giá' },
+  { icon: <BellOutlined />, title: 'Theo dõi giá', desc: 'Báo ngay khi giảm' },
   { icon: <CustomerServiceOutlined />, title: 'Hỗ trợ 24/7', desc: 'Tư vấn tận tâm' },
 ];
 
+const CARD_COLS = { xs: 12, sm: 12, md: 8, lg: 6, xl: 6 };
+
 export default function HomePage() {
+  useDocumentTitle('Trang chủ');
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [newest, setNewest] = useState<ProductListItem[]>([]);
-  const [deals, setDeals] = useState<ProductListItem[]>([]);
+  const [bestPrice, setBestPrice] = useState<ProductListItem[]>([]);
   const [brands, setBrands] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   // Phân biệt lỗi mạng với "shop chưa có dữ liệu" — tránh hiện "Chưa có sản phẩm" giả khi mất mạng.
@@ -171,14 +147,14 @@ export default function HomePage() {
     Promise.all([
       categoryApi.list(),
       productApi.list({ sort: 'newest', limit: 10 }),
-      productApi.list({ sort: 'price_asc', limit: 5 }),
+      productApi.list({ sort: 'price_asc', limit: 4 }),
       productApi.brands(),
     ])
-      .then(([catRes, newRes, dealRes, brandRes]) => {
+      .then(([catRes, newRes, cheapRes, brandRes]) => {
         if (ignore) return;
         setCategories(catRes.data);
         setNewest(getItems(newRes.data));
-        setDeals(getItems(dealRes.data));
+        setBestPrice(getItems(cheapRes.data));
         setBrands(brandRes.data);
       })
       .catch(() => {
@@ -196,36 +172,46 @@ export default function HomePage() {
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
   return (
-    <div className="home-root">
-      {/* ===== Hero banner cam ===== */}
-      <section className="home-hero">
-        <div className="home-hero__rings" />
-        <div className="home-hero__rays" />
+    <>
+      {/* ===== Hero ===== */}
+      <section className="hero full-bleed" aria-labelledby="hero-title">
+        <div className="hero__rings" aria-hidden="true" />
+        <div className="hero__rays" aria-hidden="true" />
         <DongSonDrum />
 
-        <div className="home-hero__content">
-          <p className="home-hero__eyebrow">Trợ lý mua sắm đồ điện tử</p>
-          <h1 className="home-hero__title">
-            Công nghệ <b>thế hệ mới</b>
+        <div className="hero__content">
+          <p className="hero__eyebrow">Trợ lý mua sắm đồ điện tử</p>
+          <h1 id="hero-title" className="hero__title">
+            Công nghệ <em>thế hệ mới</em>
           </h1>
-          <p className="home-hero__sub">
+          <p className="hero__sub">
             Laptop, điện thoại, thiết bị thông minh — chính hãng, giá tốt, kèm trợ lý AI
             gợi ý sản phẩm và theo dõi giảm giá tự động.
           </p>
-          <button className="home-hero__cta" onClick={() => navigate('/products')}>
-            Khám phá ngay <ArrowRightOutlined />
-          </button>
 
-          <div className="home-hero__stats">
-            <div className="home-hero__stat">
+          <div className="hero__actions">
+            <button type="button" className="hero__cta" onClick={() => navigate('/products')}>
+              Khám phá ngay <ArrowRightOutlined aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="hero__cta hero__cta--ghost"
+              onClick={() => navigate('/price-alerts')}
+            >
+              <BellOutlined aria-hidden="true" /> Theo dõi giá
+            </button>
+          </div>
+
+          <div className="hero__stats">
+            <div className="hero__stat">
               <b>10K+</b>
               <span>Sản phẩm</span>
             </div>
-            <div className="home-hero__stat">
+            <div className="hero__stat">
               <b>50K+</b>
               <span>Khách hàng</span>
             </div>
-            <div className="home-hero__stat">
+            <div className="hero__stat">
               <b>4.8★</b>
               <span>Đánh giá</span>
             </div>
@@ -233,147 +219,185 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div className="home-container brand-bg">
-        {error && (
-          <Alert
-            type="error"
-            showIcon
-            style={{ marginBottom: 20 }}
-            message="Không tải được dữ liệu trang chủ"
-            description="Có thể do mất kết nối tới máy chủ. Vui lòng thử lại."
-            action={
-              <Button size="small" danger onClick={reload}>
-                Thử lại
-              </Button>
-            }
-          />
-        )}
-        {/* ===== Dải cam kết ===== */}
+      {error && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginTop: 24 }}
+          message="Không tải được dữ liệu trang chủ"
+          description="Có thể do mất kết nối tới máy chủ. Vui lòng thử lại."
+          action={
+            <Button size="small" danger onClick={reload}>
+              Thử lại
+            </Button>
+          }
+        />
+      )}
+
+      {/* ===== Cam kết ===== */}
+      <ScrollReveal>
+        <div className={error ? 'commitments' : 'commitments commitments--overlap'}>
+          {COMMITMENTS.map((c) => (
+            <div className="commitment" key={c.title}>
+              <span className="commitment__icon" aria-hidden="true">
+                {c.icon}
+              </span>
+              <div>
+                <b>{c.title}</b>
+                <span>{c.desc}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </ScrollReveal>
+
+      {/* ===== Danh mục ===== */}
+      <ScrollReveal>
+        <section className="hsection" aria-labelledby="sec-cat">
+          <div className="hsection__head">
+            <h2 id="sec-cat" className="section-title">
+              Danh mục nổi bật
+            </h2>
+          </div>
+          {loading ? (
+            <Skeleton active paragraph={{ rows: 2 }} />
+          ) : categories.length === 0 ? (
+            <Empty description="Chưa có danh mục" />
+          ) : (
+            <div className="cats">
+              {categories.map((c) => (
+                <Link key={c.id} to={`/products?categoryId=${c.id}`} className="cat">
+                  <span className="cat__icon">
+                    <CategoryIcon icon={c.icon} />
+                  </span>
+                  <span className="cat__name">{c.name}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+      </ScrollReveal>
+
+      {/* ===== Giá tốt =====
+          Dữ liệu là 4 sản phẩm có giá thấp nhất (sort=price_asc). Backend chưa
+          có khái niệm khuyến mãi/giá gốc, nên phần này gọi đúng tên là "giá tốt"
+          thay vì "deal hot" kèm đồng hồ đếm ngược như bản cũ — đếm ngược đó
+          không gắn với chương trình khuyến mãi có thật nào. */}
+      {!loading && bestPrice.length > 0 && (
         <ScrollReveal>
-          <div className="home-features">
-            {FEATURES.map((f) => (
-              <div className="home-feature" key={f.title}>
-                {f.icon}
+          <section className="hsection" aria-labelledby="sec-best">
+            <div className="bestprice">
+              <div className="hsection__head">
                 <div>
-                  <b>{f.title}</b>
-                  <span>{f.desc}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </ScrollReveal>
-
-        {/* ===== Danh mục — icon tròn cuộn ngang ===== */}
-        <ScrollReveal>
-          <div className="home-section">
-            <div className="home-section__head">
-              <h2 className="home-section-title">Danh mục nổi bật</h2>
-            </div>
-            {loading ? (
-              <Skeleton active paragraph={{ rows: 1 }} />
-            ) : categories.length === 0 ? (
-              <Empty description="Chưa có danh mục" />
-            ) : (
-              <div className="home-categories-scroll">
-                {categories.map((c) => (
-                  <Link
-                    key={c.id}
-                    to={`/products?categoryId=${c.id}`}
-                    className="home-cat-item"
-                  >
-                    <div className="home-cat-icon">
-                      <CategoryIcon icon={c.icon} />
-                    </div>
-                    <div className="home-cat-name">{c.name}</div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </ScrollReveal>
-
-        {/* ===== Deal hot hôm nay ===== */}
-        {!loading && deals.length > 0 && (
-          <ScrollReveal>
-            <div className="home-section">
-              <div className="home-deal brand-bg brand-bg--soft">
-                <div className="home-deal__head">
-                  <h2 className="home-deal__title">
-                    <FireOutlined className="home-deal__fire" />
-                    Deal hot hôm nay
+                  <h2 id="sec-best" className="bestprice__title">
+                    <TagOutlined className="bestprice__fire" aria-hidden="true" />
+                    Giá tốt hôm nay
                   </h2>
-                  <DealCountdown />
+                  <p className="hsection__sub">Những sản phẩm đang có mức giá thấp nhất tại NexTech</p>
                 </div>
-                <Row gutter={[16, 16]}>
-                  {deals.map((p, i) => (
-                    <Col key={p.id} xs={12} sm={8} md={8} lg={6}>
-                      <ScrollReveal delay={i * 80}>
-                        <ProductCard product={p} />
-                      </ScrollReveal>
-                    </Col>
-                  ))}
-                </Row>
+                <Link to="/products?sort=price_asc" className="hsection__link">
+                  Xem tất cả <ArrowRightOutlined aria-hidden="true" />
+                </Link>
               </div>
-            </div>
-          </ScrollReveal>
-        )}
-
-        {/* ===== Sản phẩm mới ===== */}
-        <ScrollReveal>
-          <div className="home-section">
-            <div className="home-section__head">
-              <h2 className="home-section-title">Sản phẩm mới</h2>
-              <Link to="/products" className="home-section__link">
-                Xem tất cả <ArrowRightOutlined />
-              </Link>
-            </div>
-            {loading ? (
               <Row gutter={[16, 16]}>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Col key={i} xs={12} sm={12} md={8} lg={6}>
-                    <Card>
-                      <Skeleton active />
-                    </Card>
-                  </Col>
-                ))}
-              </Row>
-            ) : newest.length === 0 ? (
-              <Empty description="Chưa có sản phẩm" />
-            ) : (
-              <Row gutter={[16, 16]}>
-                {newest.map((p, i) => (
-                  <Col key={p.id} xs={12} sm={12} md={8} lg={6}>
+                {bestPrice.map((p, i) => (
+                  <Col key={p.id} {...CARD_COLS}>
                     <ScrollReveal delay={i * 60}>
                       <ProductCard product={p} />
                     </ScrollReveal>
                   </Col>
                 ))}
               </Row>
-            )}
-          </div>
-        </ScrollReveal>
-
-        {/* ===== Thương hiệu nổi bật ===== */}
-        {brands.length > 0 && (
-          <ScrollReveal>
-            <div className="home-section" style={{ marginBottom: 0 }}>
-              <div className="home-section__head">
-                <h2 className="home-section-title">Thương hiệu nổi bật</h2>
-              </div>
-              <div className="home-brands">
-                {brands.map((b, i) => (
-                  <ScrollReveal key={b} delay={i * 50}>
-                    <Link to={`/products?brand=${encodeURIComponent(b)}`} className="home-brand">
-                      <div className="home-brand__badge">{b.charAt(0).toUpperCase()}</div>
-                      <div className="home-brand__name">{b}</div>
-                    </Link>
-                  </ScrollReveal>
-                ))}
-              </div>
             </div>
-          </ScrollReveal>
-        )}
-      </div>
-    </div>
+          </section>
+        </ScrollReveal>
+      )}
+
+      {/* ===== Sản phẩm mới ===== */}
+      <ScrollReveal>
+        <section className="hsection" aria-labelledby="sec-new">
+          <div className="hsection__head">
+            <h2 id="sec-new" className="section-title">
+              Sản phẩm mới
+            </h2>
+            <Link to="/products" className="hsection__link">
+              Xem tất cả <ArrowRightOutlined aria-hidden="true" />
+            </Link>
+          </div>
+          {loading ? (
+            <Row gutter={[16, 16]}>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Col key={i} {...CARD_COLS}>
+                  {/* Khung xương giữ đúng tỉ lệ thẻ thật để nội dung không nhảy
+                      khi tải xong (giữ CLS thấp). */}
+                  <div className="pcard" style={{ padding: 16 }}>
+                    <Skeleton.Image active style={{ width: '100%', height: 130 }} />
+                    <Skeleton active paragraph={{ rows: 2 }} style={{ marginTop: 16 }} />
+                  </div>
+                </Col>
+              ))}
+            </Row>
+          ) : newest.length === 0 ? (
+            <Empty description="Chưa có sản phẩm" />
+          ) : (
+            <Row gutter={[16, 16]}>
+              {newest.map((p, i) => (
+                <Col key={p.id} {...CARD_COLS}>
+                  <ScrollReveal delay={i * 50}>
+                    <ProductCard product={p} />
+                  </ScrollReveal>
+                </Col>
+              ))}
+            </Row>
+          )}
+        </section>
+      </ScrollReveal>
+
+      {/* ===== Trợ lý AI ===== */}
+      <ScrollReveal>
+        <section className="hsection aiband" aria-labelledby="sec-ai">
+          <span className="aiband__icon" aria-hidden="true">
+            <RobotOutlined />
+          </span>
+          <div>
+            <h2 id="sec-ai">Chưa biết chọn gì? Hỏi trợ lý AI</h2>
+            <p>
+              Mô tả nhu cầu và ngân sách bằng lời thường — trợ lý sẽ lọc giúp bạn những
+              sản phẩm phù hợp nhất, so sánh cấu hình và theo dõi giá khi bạn cần.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="hero__cta"
+            onClick={() => navigate('/products')}
+          >
+            Bắt đầu tìm <ArrowRightOutlined aria-hidden="true" />
+          </button>
+        </section>
+      </ScrollReveal>
+
+      {/* ===== Thương hiệu ===== */}
+      {brands.length > 0 && (
+        <ScrollReveal>
+          <section className="hsection" style={{ marginBottom: 0 }} aria-labelledby="sec-brand">
+            <div className="hsection__head">
+              <h2 id="sec-brand" className="section-title">
+                Thương hiệu nổi bật
+              </h2>
+            </div>
+            <div className="brands">
+              {brands.map((b) => (
+                <Link key={b} to={`/products?brand=${encodeURIComponent(b)}`} className="brand">
+                  <span className="brand__badge" aria-hidden="true">
+                    {b.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="brand__name">{b}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        </ScrollReveal>
+      )}
+    </>
   );
 }

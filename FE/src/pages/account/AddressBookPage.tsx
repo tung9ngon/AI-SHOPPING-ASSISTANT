@@ -1,31 +1,22 @@
 import { useEffect, useState } from 'react';
+import { App, Button, Empty, Popconfirm, Skeleton, Tag } from 'antd';
 import {
-  App,
-  Button,
-  Card,
-  Empty,
-  Popconfirm,
-  Skeleton,
-  Space,
-  Tag,
-  Typography,
-} from 'antd';
-import {
-  PlusOutlined,
-  EnvironmentOutlined,
-  EditOutlined,
   DeleteOutlined,
-  StarOutlined,
+  EditOutlined,
+  EnvironmentOutlined,
+  PlusOutlined,
   StarFilled,
+  StarOutlined,
 } from '@ant-design/icons';
 import { addressApi } from '../../api/addresses';
 import { getErrorMessage } from '../../api/client';
 import type { Address } from '../../types';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import AddressFormModal from './AddressFormModal';
-
-const { Title, Text } = Typography;
+import './AddressBookPage.css';
 
 export default function AddressBookPage() {
+  useDocumentTitle('Sổ địa chỉ');
   const { message } = App.useApp();
   const [items, setItems] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,18 +70,14 @@ export default function AddressBookPage() {
   };
 
   return (
-    <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-        }}
-      >
-        <Title level={3} style={{ margin: 0 }}>
-          Sổ địa chỉ
-        </Title>
+    <>
+      <div className="account__head">
+        <div>
+          <h1 className="account__title">Sổ địa chỉ</h1>
+          <p className="account__subtitle">
+            Địa chỉ mặc định sẽ được chọn sẵn khi bạn thanh toán
+          </p>
+        </div>
         <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>
           Thêm địa chỉ
         </Button>
@@ -99,66 +86,75 @@ export default function AddressBookPage() {
       {loading ? (
         <Skeleton active paragraph={{ rows: 4 }} />
       ) : items.length === 0 ? (
-        <Card>
+        <div className="account__panel">
           <Empty description="Bạn chưa có địa chỉ nào">
             <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>
               Thêm địa chỉ đầu tiên
             </Button>
           </Empty>
-        </Card>
+        </div>
       ) : (
-        <Space direction="vertical" style={{ width: '100%' }} size="middle">
+        <div className="addr__list">
           {items.map((a) => (
-            <Card key={a.id} styles={{ body: { padding: 16 } }}>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <EnvironmentOutlined style={{ fontSize: 20, color: '#ff6a00', marginTop: 4 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <Space>
-                    <Text strong>{a.recipient_name || 'Người nhận'}</Text>
-                    {a.phone_number && (
-                      <>
-                        <Text type="secondary">|</Text>
-                        <Text>{a.phone_number}</Text>
-                      </>
+            <article className={`addr${a.is_default ? ' addr--default' : ''}`} key={a.id}>
+              <div className="addr__top">
+                <span className="addr__pin" aria-hidden="true">
+                  <EnvironmentOutlined />
+                </span>
+                <div className="addr__who">
+                  <div className="addr__name">
+                    {a.recipient_name || 'Người nhận'}
+                    {a.phone_number && <span className="addr__phone">{a.phone_number}</span>}
+                    {a.is_default && (
+                      <Tag color="orange" style={{ marginInlineEnd: 0 }}>
+                        Mặc định
+                      </Tag>
                     )}
-                    {a.is_default && <Tag color="orange">Mặc định</Tag>}
-                  </Space>
-                  <div style={{ color: '#555', marginTop: 4 }}>{a.full_address}</div>
+                  </div>
+                  <p className="addr__text">{a.full_address}</p>
                 </div>
-                <Space direction="vertical" align="end">
-                  <Space>
-                    <Button
-                      size="small"
-                      icon={<EditOutlined />}
-                      onClick={() => openEdit(a)}
-                    >
-                      Sửa
-                    </Button>
-                    <Popconfirm
-                      title="Xoá địa chỉ này?"
-                      okText="Xoá"
-                      cancelText="Huỷ"
-                      onConfirm={() => remove(a.id)}
-                    >
-                      <Button size="small" danger icon={<DeleteOutlined />} loading={busyId === a.id}>
-                        Xoá
-                      </Button>
-                    </Popconfirm>
-                  </Space>
+              </div>
+
+              <div className="addr__actions">
+                <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(a)}>
+                  Sửa
+                </Button>
+                <Popconfirm
+                  title="Xoá địa chỉ này?"
+                  okText="Xoá"
+                  cancelText="Huỷ"
+                  okButtonProps={{ danger: true }}
+                  onConfirm={() => remove(a.id)}
+                >
+                  <Button size="small" danger icon={<DeleteOutlined />} loading={busyId === a.id}>
+                    Xoá
+                  </Button>
+                </Popconfirm>
+
+                <span className="addr__spacer" />
+
+                {/* Ở địa chỉ mặc định, trước đây hiện một nút bị vô hiệu hoá vĩnh
+                    viễn — vừa thừa (đã có thẻ "Mặc định" ở trên) vừa mờ khó đọc.
+                    Thay bằng nhãn chữ thường. */}
+                {a.is_default ? (
+                  <span className="addr__is-default">
+                    <StarFilled aria-hidden="true" /> Địa chỉ mặc định
+                  </span>
+                ) : (
                   <Button
                     size="small"
                     type="text"
-                    icon={a.is_default ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
-                    disabled={a.is_default || busyId === a.id}
+                    icon={<StarOutlined />}
+                    disabled={busyId === a.id}
                     onClick={() => setDefault(a.id)}
                   >
-                    {a.is_default ? 'Đang mặc định' : 'Đặt mặc định'}
+                    Đặt mặc định
                   </Button>
-                </Space>
+                )}
               </div>
-            </Card>
+            </article>
           ))}
-        </Space>
+        </div>
       )}
 
       <AddressFormModal
@@ -170,6 +166,6 @@ export default function AddressBookPage() {
           load();
         }}
       />
-    </div>
+    </>
   );
 }

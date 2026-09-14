@@ -82,7 +82,11 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <AuthLayout title="Quên mật khẩu" subtitle="Đặt lại mật khẩu qua email">
+    <AuthLayout
+      title="Quên mật khẩu"
+      subtitle="Đặt lại mật khẩu bằng mã OTP gửi qua email"
+      footer={<Link to="/login">Quay lại đăng nhập</Link>}
+    >
       <Steps
         size="small"
         current={step}
@@ -158,10 +162,6 @@ export default function ForgotPasswordPage() {
           </Button>
         </Form>
       )}
-
-      <div style={{ textAlign: 'center', marginTop: 20 }}>
-        <Link to="/login">Quay lại đăng nhập</Link>
-      </div>
     </AuthLayout>
   );
 }

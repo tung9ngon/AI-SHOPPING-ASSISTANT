@@ -146,7 +146,7 @@ export default function PayosQrModal({
             )}
             <div style={{ margin: '16px 0' }}>
               <Text>Số tiền: </Text>
-              <Text strong style={{ fontSize: 18, color: '#f5222d' }}>
+              <Text strong style={{ fontSize: 18, color: 'var(--color-price)' }}>
                 {formatVND(amount)}
               </Text>
             </div>

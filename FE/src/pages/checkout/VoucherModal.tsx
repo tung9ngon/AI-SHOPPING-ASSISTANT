@@ -60,7 +60,9 @@ function VoucherRow({
   const eligible = isVoucherEligible(v, subtotal);
   const amount = calcVoucherAmount(v, subtotal, shippingFee);
   const isFreeship = v.category === 'free_shipping';
-  const stripColor = isFreeship ? '#26aa99' : '#ff6a00';
+  // Chữ trắng nằm trên dải này nên phải dùng bậc đậm: xanh 700 đạt 6.46:1,
+  // cam 700 đạt 5.18:1. Dùng bậc 500 sẽ tụt xuống 3.4:1 / 3.0:1 — dưới chuẩn AA.
+  const stripColor = isFreeship ? 'var(--green-700)' : 'var(--color-cta-bg)';
   const stripLabel = isFreeship ? 'VẬN\nCHUYỂN' : 'GIẢM\nGIÁ';
   const minValue = v.min_order_value == null ? 0 : Number(v.min_order_value);
   const expiry = formatShortDate(v.valid_until);
@@ -70,11 +72,11 @@ function VoucherRow({
       onClick={() => eligible && onToggle()}
       style={{
         display: 'flex',
-        border: `1px solid ${selected ? stripColor : '#eee'}`,
+        border: `1px solid ${selected ? stripColor : 'var(--color-border)'}`,
         borderRadius: 10,
         overflow: 'hidden',
         marginBottom: 12,
-        background: eligible ? '#fff' : '#fafafa',
+        background: eligible ? 'var(--color-surface)' : 'var(--color-surface-sunken)',
         opacity: eligible ? 1 : 0.6,
         cursor: eligible ? 'pointer' : 'not-allowed',
         boxShadow: selected ? `0 0 0 1px ${stripColor}` : 'none',
@@ -86,7 +88,7 @@ function VoucherRow({
           width: 88,
           flexShrink: 0,
           background: stripColor,
-          color: '#fff',
+          color: '#FFFFFF',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -105,20 +107,20 @@ function VoucherRow({
       <div style={{ flex: 1, minWidth: 0, padding: '10px 12px' }}>
         <div style={{ fontWeight: 600 }}>{voucherHeadline(v)}</div>
         {v.description && (
-          <div style={{ color: '#666', fontSize: 13 }}>{v.description}</div>
+          <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>{v.description}</div>
         )}
-        <div style={{ color: '#888', fontSize: 12, marginTop: 4 }}>
+        <div style={{ color: 'var(--color-text-subtle)', fontSize: 12, marginTop: 4 }}>
           {minValue > 0 ? `Đơn tối thiểu ${formatVND(minValue)}` : 'Áp dụng mọi đơn hàng'}
         </div>
         {expiry && (
-          <div style={{ color: '#aaa', fontSize: 12 }}>HSD: {expiry}</div>
+          <div style={{ color: 'var(--color-text-subtle)', fontSize: 12 }}>HSD: {expiry}</div>
         )}
         {eligible ? (
           <Tag color={isFreeship ? 'cyan' : 'orange'} style={{ marginTop: 6 }}>
             {isFreeship ? 'Giảm phí ship' : 'Giảm'} {formatVND(amount)}
           </Tag>
         ) : (
-          <div style={{ color: '#fa541c', fontSize: 12, marginTop: 6 }}>
+          <div style={{ color: 'var(--color-warning-text)', fontSize: 12, marginTop: 6 }}>
             Mua thêm {formatVND(minValue - subtotal)} để dùng mã này
           </div>
         )}
@@ -142,7 +144,7 @@ function VoucherRow({
               width: 20,
               height: 20,
               borderRadius: '50%',
-              border: `2px solid ${eligible ? '#ccc' : '#e0e0e0'}`,
+              border: `2px solid ${eligible ? 'var(--color-border-strong)' : 'var(--color-border)'}`,
               display: 'inline-block',
             }}
           />

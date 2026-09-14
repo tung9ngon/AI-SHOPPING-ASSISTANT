@@ -1,0 +1,104 @@
+/* =============================================================================
+   SỔ ĐỊA CHỈ
+============================================================================= */
+
+.addr__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-4);
+}
+
+.addr {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  transition: border-color var(--dur-base) var(--ease-in-out),
+              box-shadow var(--dur-base) var(--ease-out);
+}
+.addr:hover {
+  box-shadow: var(--shadow-md);
+}
+/* Địa chỉ mặc định: viền cam + nền tint, để phân biệt ngay khi liếc qua */
+.addr--default {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.addr__top {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+.addr__pin {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-accent-border);
+  color: var(--color-accent-text);
+  font-size: var(--text-md);
+}
+.addr__who {
+  min-width: 0;
+  flex: 1;
+}
+.addr__name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.addr__phone {
+  font-weight: var(--weight-normal);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.addr__text {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.addr__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+.addr--default .addr__actions {
+  border-top-color: var(--color-accent-border);
+}
+.addr__actions .addr__spacer {
+  margin-inline-start: auto;
+}
+
+@media (max-width: 575px) {
+  .addr__list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Nhãn "địa chỉ mặc định" — thay cho nút bị vô hiệu hoá vĩnh viễn ở bản trước */
+.addr__is-default {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-accent-text);
+}
+.addr__is-default .anticon {
+  color: var(--color-warning-text);
+}

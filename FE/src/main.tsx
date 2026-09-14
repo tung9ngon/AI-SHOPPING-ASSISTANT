@@ -4,29 +4,20 @@ import { BrowserRouter } from 'react-router-dom';
 import { ConfigProvider, App as AntdApp } from 'antd';
 import viVN from 'antd/locale/vi_VN';
 import 'antd/dist/reset.css';
-import './theme.css';
+import './styles/tokens.css';
+import './styles/base.css';
+import './styles/antd-overrides.css';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { lightTheme, darkTheme } from './theme/antdTheme';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <ConfigProvider
-      locale={viVN}
-      theme={{
-        token: {
-          colorPrimary: '#f26d21',
-          colorLink: '#f26d21',
-          colorLinkHover: '#e8530e',
-          borderRadius: 8,
-          fontFamily:
-            "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-        },
-        components: {
-          Button: { primaryShadow: '0 4px 12px rgba(242, 109, 33, 0.28)' },
-        },
-      }}
-    >
+// ConfigProvider phải nằm trong ThemeProvider để đọc được chế độ sáng/tối hiện tại.
+function ThemedApp() {
+  const { effectiveMode } = useTheme();
+  return (
+    <ConfigProvider locale={viVN} theme={effectiveMode === 'dark' ? darkTheme : lightTheme}>
       <AntdApp>
         <BrowserRouter>
           <AuthProvider>
@@ -37,5 +28,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         </BrowserRouter>
       </AntdApp>
     </ConfigProvider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <ThemeProvider>
+      <ThemedApp />
+    </ThemeProvider>
   </React.StrictMode>,
 );

@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLockLightTheme } from '../context/ThemeContext';
 import Logo from '../components/Logo';
 import './AdminLayout.css';
 
@@ -69,6 +70,9 @@ function selectedMenuKey(pathname: string) {
 }
 
 export default function AdminLayout() {
+  // Khu quản trị chưa hỗ trợ nền tối (các file CSS ở đây viết màu cứng),
+  // nên ép về chế độ sáng trong lúc đang ở trong khu này.
+  useLockLightTheme();
   const { user } = useAuth();
   const location = useLocation();
   const activeKey = selectedMenuKey(location.pathname);

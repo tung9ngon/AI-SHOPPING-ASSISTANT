@@ -37,7 +37,9 @@ import AddressFormModal from '../account/AddressFormModal';
 import PayosQrModal from './PayosQrModal';
 import VoucherModal from './VoucherModal';
 
-const { Title, Text, Paragraph } = Typography;
+import './CheckoutPage.css';
+
+const { Text, Paragraph } = Typography;
 
 // Khớp logic phí ship của BE (order.service.ts)
 const SHIPPING_FEE = 30_000;
@@ -196,9 +198,7 @@ export default function CheckoutPage() {
 
   return (
     <div>
-      <Title level={3} style={{ marginTop: 0 }}>
-        Thanh toán
-      </Title>
+      <h1 className="checkout__head">Thanh toán</h1>
 
       <Row gutter={[24, 24]}>
         {/* ===== Trái: địa chỉ + sản phẩm + phương thức ===== */}
@@ -249,9 +249,10 @@ export default function CheckoutPage() {
                     <Radio
                       key={a.id}
                       value={a.id}
+                      className="checkout__option"
                       style={{
                         padding: 12,
-                        border: '1px solid #eee',
+                        border: '1px solid var(--color-border)',
                         borderRadius: 8,
                         width: '100%',
                         alignItems: 'flex-start',
@@ -267,7 +268,7 @@ export default function CheckoutPage() {
                         )}
                         {a.is_default && <Tag color="orange">Mặc định</Tag>}
                       </Space>
-                      <div style={{ color: '#666', fontSize: 13 }}>{a.full_address}</div>
+                      <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>{a.full_address}</div>
                     </Radio>
                   ))}
                 </Space>
@@ -288,7 +289,7 @@ export default function CheckoutPage() {
                       height: 56,
                       objectFit: 'cover',
                       borderRadius: 6,
-                      background: '#f5f5f5',
+                      background: 'var(--color-surface-sunken)',
                     }}
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -319,9 +320,9 @@ export default function CheckoutPage() {
               style={{ width: '100%' }}
             >
               <Space direction="vertical" style={{ width: '100%' }}>
-                <Radio value="cod" style={{ padding: 12, border: '1px solid #eee', borderRadius: 8, width: '100%' }}>
+                <Radio value="cod" className="checkout__option">
                   <Space>
-                    <DollarOutlined style={{ color: '#52c41a', fontSize: 18 }} />
+                    <DollarOutlined style={{ color: 'var(--color-success)', fontSize: 18 }} />
                     <span>
                       <b>Thanh toán khi nhận hàng (COD)</b>
                       <br />
@@ -331,9 +332,9 @@ export default function CheckoutPage() {
                     </span>
                   </Space>
                 </Radio>
-                <Radio value="payos" style={{ padding: 12, border: '1px solid #eee', borderRadius: 8, width: '100%' }}>
+                <Radio value="payos" className="checkout__option">
                   <Space>
-                    <QrcodeOutlined style={{ color: '#f26d21', fontSize: 18 }} />
+                    <QrcodeOutlined style={{ color: 'var(--color-accent)', fontSize: 18 }} />
                     <span>
                       <b>Chuyển khoản / QR qua PayOS</b>
                       <br />
@@ -350,7 +351,7 @@ export default function CheckoutPage() {
 
         {/* ===== Phải: tóm tắt ===== */}
         <Col xs={24} lg={9}>
-          <Card title="Tóm tắt đơn hàng">
+          <Card className="checkout__summary" title="Tóm tắt đơn hàng">
             {/* Voucher (kiểu Shopee): mở popup chọn mã */}
             <div
               role="button"
@@ -368,13 +369,13 @@ export default function CheckoutPage() {
                 alignItems: 'center',
                 gap: 8,
                 padding: '10px 12px',
-                border: '1px solid #eee',
+                border: '1px solid var(--color-border)',
                 borderRadius: 8,
                 cursor: 'pointer',
                 marginBottom: 16,
               }}
             >
-              <TagOutlined style={{ color: '#ff6a00', fontSize: 16 }} />
+              <TagOutlined style={{ color: 'var(--color-accent)', fontSize: 16 }} />
               <Text strong>Voucher</Text>
               <div style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
                 {discountVoucher || freeshipVoucher ? (
@@ -386,7 +387,7 @@ export default function CheckoutPage() {
                   <Text type="secondary">Chọn hoặc nhập mã</Text>
                 )}
               </div>
-              <RightOutlined style={{ color: '#bbb', fontSize: 12 }} />
+              <RightOutlined style={{ color: 'var(--color-text-subtle)', fontSize: 12 }} />
             </div>
 
             <Divider style={{ margin: '12px 0' }} />
@@ -402,13 +403,13 @@ export default function CheckoutPage() {
             {discountAmount > 0 && (
               <Row justify="space-between" style={{ marginBottom: 8 }}>
                 <Text>Giảm giá</Text>
-                <Text style={{ color: '#52c41a' }}>-{formatVND(discountAmount)}</Text>
+                <Text style={{ color: 'var(--color-success)' }}>-{formatVND(discountAmount)}</Text>
               </Row>
             )}
             {shippingDiscount > 0 && (
               <Row justify="space-between" style={{ marginBottom: 8 }}>
                 <Text>Giảm phí vận chuyển</Text>
-                <Text style={{ color: '#52c41a' }}>-{formatVND(shippingDiscount)}</Text>
+                <Text style={{ color: 'var(--color-success)' }}>-{formatVND(shippingDiscount)}</Text>
               </Row>
             )}
             {shipping > 0 && (
@@ -422,7 +423,7 @@ export default function CheckoutPage() {
               <Text strong style={{ fontSize: 16 }}>
                 Tổng cộng
               </Text>
-              <Text strong style={{ fontSize: 22, color: '#f5222d' }}>
+              <Text strong style={{ fontSize: 22, color: 'var(--color-price)' }}>
                 {formatVND(total)}
               </Text>
             </Row>

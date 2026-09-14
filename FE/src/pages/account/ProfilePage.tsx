@@ -37,7 +37,6 @@ import { formatDateShort } from '../../utils/format';
 import { phoneRule } from '../../utils/validators';
 import { useAuth } from '../../context/AuthContext';
 import type { MeAccount, ShoppingProfile, UserPreferences } from '../../types';
-import AddressBookPage from './AddressBookPage';
 
 const { Title, Text } = Typography;
 
@@ -176,7 +175,7 @@ function AccountInfoTab() {
               size={104}
               src={avatarUrl || undefined}
               icon={<UserOutlined />}
-              style={{ backgroundColor: '#ff6a00' }}
+              style={{ backgroundColor: 'var(--color-cta-bg)' }}
             />
             <Title level={4} style={{ margin: 0, textAlign: 'center' }}>
               {me?.full_name}
@@ -237,7 +236,7 @@ function AccountInfoTab() {
                   size={64}
                   src={avatarUrl || undefined}
                   icon={<UserOutlined />}
-                  style={{ backgroundColor: '#ff6a00', flexShrink: 0 }}
+                  style={{ backgroundColor: 'var(--color-cta-bg)', flexShrink: 0 }}
                 />
                 <Space direction="vertical" size={4}>
                   <Space>
@@ -478,18 +477,27 @@ function PreferencesTab() {
 export default function ProfilePage() {
   useDocumentTitle('Tài khoản của tôi');
   return (
-    <div>
-      <Title level={3} style={{ marginBottom: 16 }}>
-        Tài khoản của tôi
-      </Title>
+    <>
+      <div className="account__head">
+        <div>
+          <h1 className="account__title">Thông tin tài khoản</h1>
+          <p className="account__subtitle">
+            Hồ sơ càng đầy đủ, trợ lý AI gợi ý càng sát nhu cầu của bạn
+          </p>
+        </div>
+      </div>
+
+      {/* Tab "Sổ địa chỉ" đã được gỡ khỏi đây: sổ địa chỉ giờ là một mục riêng
+          trên thanh điều hướng khu tài khoản (/account/addresses). Trước đây
+          cùng một trang hiện ở hai nơi, và bản nhúng trong tab không có URL
+          riêng nên không chia sẻ hay bookmark được. */}
       <Tabs
         defaultActiveKey="account"
         items={[
-          { key: 'account', label: 'Thông tin tài khoản', children: <AccountInfoTab /> },
+          { key: 'account', label: 'Thông tin cá nhân', children: <AccountInfoTab /> },
           { key: 'preferences', label: 'Sở thích mua sắm', children: <PreferencesTab /> },
-          { key: 'addresses', label: 'Sổ địa chỉ', children: <AddressBookPage /> },
         ]}
       />
-    </div>
+    </>
   );
 }

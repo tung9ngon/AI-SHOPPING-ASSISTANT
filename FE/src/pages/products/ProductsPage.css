@@ -1,0 +1,163 @@
+/* =============================================================================
+   TRANG DANH SÁCH SẢN PHẨM
+============================================================================= */
+
+.plist {
+  display: grid;
+  grid-template-columns: 268px minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+/* ---- Cột bộ lọc ----
+   Dính theo cuộn: danh sách sản phẩm thường dài, nếu bộ lọc cuộn mất thì phải
+   kéo ngược lên đầu trang mỗi lần muốn đổi điều kiện. */
+.pfilter {
+  position: sticky;
+  top: calc(68px + var(--space-4)); /* chiều cao header + khoảng thở */
+  max-height: calc(100vh - 68px - var(--space-8));
+  overflow-y: auto;
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+.pfilter__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.pfilter__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.pfilter__group + .pfilter__group {
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+.pfilter__label {
+  display: block;
+  margin-bottom: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.pfilter__range {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.pfilter__range span {
+  color: var(--color-text-subtle);
+}
+
+/* ---- Thanh công cụ trên lưới ---- */
+.ptoolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.ptoolbar__title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.ptoolbar__count {
+  color: var(--color-text-muted);
+  font-weight: var(--weight-normal);
+}
+.ptoolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+}
+
+/* ---- Thẻ điều kiện đang áp dụng ----
+   Bản cũ chỉ có nút "Xoá" gộp trong sidebar; trên mobile sidebar nằm xa lưới
+   nên người dùng không thấy mình đang lọc theo gì. */
+.pchips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.pchip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+  padding: 0 var(--space-2) 0 var(--space-3);
+  border: 1px solid var(--color-accent-border);
+  border-radius: var(--radius-full);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+.pchip button {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-in-out);
+}
+.pchip button:hover {
+  background: var(--color-accent-border);
+}
+
+.ppagination {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-8);
+}
+
+/* ---- Nút mở bộ lọc trên mobile ---- */
+.pfilter-trigger {
+  display: none;
+}
+
+@media (max-width: 991px) {
+  .plist {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Trên mobile bộ lọc chuyển vào Drawer — cột bên trái biến mất khỏi luồng */
+  .plist > .pfilter {
+    display: none;
+  }
+  .pfilter-trigger {
+    display: inline-flex;
+  }
+  /* Trong Drawer thì bỏ dính/khung vì đã có khung của Drawer */
+  .ant-drawer .pfilter {
+    position: static;
+    max-height: none;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+  }
+}

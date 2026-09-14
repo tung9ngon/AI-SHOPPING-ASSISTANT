@@ -1,19 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  App,
-  Breadcrumb,
-  Button,
-  Card,
-  Col,
-  Divider,
-  Popconfirm,
-  Result,
-  Row,
-  Skeleton,
-  Space,
-  Tag,
-  Typography,
-} from 'antd';
+import { App, Breadcrumb, Button, Popconfirm, Result, Skeleton, Tag } from 'antd';
 import { HomeOutlined, PictureOutlined } from '@ant-design/icons';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { orderApi, type OrderDetail } from '../../api/orders';
@@ -25,14 +11,15 @@ import {
   ORDER_STATUS_COLOR,
 } from '../../utils/format';
 import type { OrderStatus } from '../../types';
-
-const { Title, Text, Paragraph } = Typography;
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import './OrderDetailPage.css';
 
 // Chỉ huỷ được khi đơn chưa xử lý (khớp CANCELABLE_STATUSES của BE)
 const CANCELABLE: OrderStatus[] = ['pending', 'simulated_success'];
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
+  useDocumentTitle(id ? `Đơn #${id.slice(0, 8).toUpperCase()}` : 'Chi tiết đơn hàng');
   const { message } = App.useApp();
   const navigate = useNavigate();
 
@@ -110,11 +97,14 @@ export default function OrderDetailPage() {
   }
 
   const canCancel = CANCELABLE.includes(order.status);
+  const discount = Number(order.discount_amount);
+  const shipDiscount = Number(order.shipping_discount_amount ?? 0);
+  const shippingFee = Number(order.shipping_fee);
 
   return (
-    <div>
+    <>
       <Breadcrumb
-        style={{ marginBottom: 16 }}
+        style={{ marginBottom: 20 }}
         items={[
           { title: <Link to="/"><HomeOutlined /> Trang chủ</Link> },
           { title: <Link to="/orders">Đơn hàng của tôi</Link> },
@@ -122,30 +112,24 @@ export default function OrderDetailPage() {
         ]}
       />
 
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 12,
-          marginBottom: 16,
-        }}
-      >
-        <Space wrap>
-          <Title level={4} style={{ margin: 0 }}>
-            Đơn #{order.id.slice(0, 8).toUpperCase()}
-          </Title>
-          <Tag color={ORDER_STATUS_COLOR[order.status]}>
-            {ORDER_STATUS_LABEL[order.status] ?? order.status}
-          </Tag>
-        </Space>
+      <div className="odetail__head">
+        <div>
+          <div className="odetail__code">
+            <h1>Đơn #{order.id.slice(0, 8).toUpperCase()}</h1>
+            <Tag color={ORDER_STATUS_COLOR[order.status]} style={{ marginInlineEnd: 0 }}>
+              {ORDER_STATUS_LABEL[order.status] ?? order.status}
+            </Tag>
+          </div>
+          <p className="odetail__date">Đặt ngày {formatDate(order.created_at)}</p>
+        </div>
+
         {canCancel && (
           <Popconfirm
             title="Huỷ đơn hàng này?"
             description="Thao tác không thể hoàn tác."
             okText="Huỷ đơn"
             cancelText="Không"
+            okButtonProps={{ danger: true }}
             onConfirm={cancelOrder}
           >
             <Button danger loading={cancelling}>
@@ -155,126 +139,93 @@ export default function OrderDetailPage() {
         )}
       </div>
 
-      <Row gutter={[24, 24]}>
-        {/* ===== Sản phẩm ===== */}
-        <Col xs={24} lg={15}>
-          <Card title="Sản phẩm" styles={{ body: { padding: 0 } }}>
+      <div className="odetail">
+        <div>
+          <section className="obox">
+            <h2 className="obox__title">Sản phẩm ({order.items.length})</h2>
             {order.items.map((item, idx) => (
-              <div key={item.product.id + idx}>
-                {idx > 0 && <Divider style={{ margin: 0 }} />}
-                <div style={{ display: 'flex', gap: 12, padding: 16, alignItems: 'center' }}>
+              <div className="oitem" key={item.product.id + idx}>
+                <span className="oitem__img">
                   {item.product.image ? (
-                    <img
-                      src={item.product.image}
-                      alt=""
-                      style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8 }}
-                    />
+                    <img src={item.product.image} alt="" loading="lazy" />
                   ) : (
-                    <div
-                      style={{
-                        width: 60,
-                        height: 60,
-                        borderRadius: 8,
-                        background: '#f5f5f5',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#bbb',
-                        fontSize: 22,
-                      }}
-                    >
-                      <PictureOutlined />
-                    </div>
+                    <PictureOutlined aria-hidden="true" />
                   )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <Link
-                      to={`/products/${item.product.id}`}
-                      style={{ fontWeight: 600, color: 'inherit' }}
-                    >
-                      {item.product.name}
-                    </Link>
-                    <div style={{ color: '#888', marginTop: 4 }}>
-                      {formatVND(Number(item.product.price))} × {item.quantity}
-                    </div>
+                </span>
+
+                <div>
+                  <Link className="oitem__name" to={`/products/${item.product.id}`}>
+                    {item.product.name}
+                  </Link>
+                  <div className="oitem__unit tabular">
+                    {formatVND(Number(item.product.price))} × {item.quantity}
                   </div>
-                  <Text strong>
-                    {formatVND(Number(item.product.price) * item.quantity)}
-                  </Text>
+                </div>
+
+                <div className="oitem__total tabular">
+                  {formatVND(Number(item.product.price) * item.quantity)}
                 </div>
               </div>
             ))}
-          </Card>
+          </section>
 
           {(order.shipping_address?.recipient_name || order.shipping_address?.full_address) && (
-            <Card title="Người nhận" style={{ marginTop: 16 }}>
-              <Space direction="vertical" size={2}>
-                <Text strong>
+            <section className="obox">
+              <h2 className="obox__title">Người nhận</h2>
+              <div className="obox__body oreceiver">
+                <b>
                   {order.shipping_address.recipient_name}
                   {order.shipping_address.phone_number
                     ? ` · ${order.shipping_address.phone_number}`
                     : ''}
-                </Text>
-                <Text type="secondary">{order.shipping_address.full_address}</Text>
-              </Space>
-            </Card>
+                </b>
+                <span>{order.shipping_address.full_address}</span>
+              </div>
+            </section>
           )}
 
           {order.note && (
-            <Card title="Ghi chú" style={{ marginTop: 16 }}>
-              <Paragraph style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}>
-                {order.note}
-              </Paragraph>
-            </Card>
+            <section className="obox">
+              <h2 className="obox__title">Ghi chú</h2>
+              <div className="obox__body">
+                <p className="onote">{order.note}</p>
+              </div>
+            </section>
           )}
-        </Col>
+        </div>
 
-        {/* ===== Tóm tắt ===== */}
-        <Col xs={24} lg={9}>
-          <Card title="Tóm tắt thanh toán">
-            <Row justify="space-between" style={{ marginBottom: 8 }}>
-              <Text>Tạm tính</Text>
-              <Text>{formatVND(Number(order.subtotal))}</Text>
-            </Row>
-            <Row justify="space-between" style={{ marginBottom: 8 }}>
-              <Text>Phí vận chuyển</Text>
-              <Text>
-                {Number(order.shipping_fee) === 0
-                  ? 'Miễn phí'
-                  : formatVND(Number(order.shipping_fee))}
-              </Text>
-            </Row>
-            {Number(order.discount_amount) > 0 && (
-              <Row justify="space-between" style={{ marginBottom: 8 }}>
-                <Text>Giảm giá</Text>
-                <Text style={{ color: '#52c41a' }}>
-                  -{formatVND(Number(order.discount_amount))}
-                </Text>
-              </Row>
+        <aside className="obox osummary" aria-label="Tóm tắt thanh toán">
+          <h2 className="obox__title">Tóm tắt thanh toán</h2>
+          <div className="obox__body">
+            <div className="orow">
+              <span>Tạm tính</span>
+              <span className="tabular">{formatVND(Number(order.subtotal))}</span>
+            </div>
+            <div className="orow">
+              <span>Phí vận chuyển</span>
+              <span className="tabular">
+                {shippingFee === 0 ? 'Miễn phí' : formatVND(shippingFee)}
+              </span>
+            </div>
+            {discount > 0 && (
+              <div className="orow orow--save">
+                <span>Giảm giá</span>
+                <span className="tabular">-{formatVND(discount)}</span>
+              </div>
             )}
-            {Number(order.shipping_discount_amount) > 0 && (
-              <Row justify="space-between" style={{ marginBottom: 8 }}>
-                <Text>Giảm phí vận chuyển</Text>
-                <Text style={{ color: '#52c41a' }}>
-                  -{formatVND(Number(order.shipping_discount_amount))}
-                </Text>
-              </Row>
+            {shipDiscount > 0 && (
+              <div className="orow orow--save">
+                <span>Giảm phí vận chuyển</span>
+                <span className="tabular">-{formatVND(shipDiscount)}</span>
+              </div>
             )}
-            <Divider style={{ margin: '12px 0' }} />
-            <Row justify="space-between" align="middle">
-              <Text strong style={{ fontSize: 16 }}>
-                Tổng cộng
-              </Text>
-              <Text strong style={{ fontSize: 20, color: '#f5222d' }}>
-                {formatVND(Number(order.total))}
-              </Text>
-            </Row>
-            <Divider style={{ margin: '12px 0' }} />
-            <Text type="secondary" style={{ fontSize: 13 }}>
-              Ngày đặt: {formatDate(order.created_at)}
-            </Text>
-          </Card>
-        </Col>
-      </Row>
-    </div>
+            <div className="orow orow--total">
+              <span>Tổng cộng</span>
+              <b className="tabular">{formatVND(Number(order.total))}</b>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </>
   );
 }

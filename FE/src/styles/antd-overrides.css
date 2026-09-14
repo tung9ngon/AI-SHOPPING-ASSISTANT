@@ -1,0 +1,47 @@
+/* =============================================================================
+   SỬA LỖI TƯƠNG PHẢN CỦA ANT DESIGN
+   Nơi chứa những thứ KHÔNG chỉnh được qua ConfigProvider. Mỗi khối phải kèm lý
+   do và con số đo được — không sửa theo cảm tính.
+============================================================================= */
+
+/* ---------------------------------------------------------------------------
+   1. Màu chữ của Tag ở chế độ sáng
+   AntD lấy bậc 6 của bảng màu làm màu chữ trên nền bậc 1. Đo thực tế:
+     gold 2.76:1 · cyan 3.39:1 · green 3.37:1 · orange 3.34:1 · blue 3.66:1
+   Tag hiển thị ở cỡ 12px nên ngưỡng là 4.5:1 -> tất cả đều trượt.
+   Hạ xuống bậc 8 (riêng gold phải xuống bậc 9 vì bậc 8 chỉ đạt 4.25).
+   Chỉ áp cho chế độ sáng; bảng màu chế độ tối của AntD đã đạt chuẩn.
+   Dùng :not([data-theme='dark']) thay vì [data-theme='light'] để vẫn đúng
+   trong trường hợp thuộc tính chưa kịp gắn.
+   --------------------------------------------------------------------------- */
+:root:not([data-theme='dark']) .ant-tag-gold   { color: #874D00; }  /* 6.53:1 */
+:root:not([data-theme='dark']) .ant-tag-green  { color: #237804; }  /* 5.44:1 */
+:root:not([data-theme='dark']) .ant-tag-cyan   { color: #006D75; }  /* 5.82:1 */
+:root:not([data-theme='dark']) .ant-tag-blue   { color: #0958D9; }  /* 5.50:1 */
+:root:not([data-theme='dark']) .ant-tag-red    { color: #A8071A; }  /* 7.09:1 */
+:root:not([data-theme='dark']) .ant-tag-orange { color: #AD4E00; }  /* 5.09:1 */
+:root:not([data-theme='dark']) .ant-tag-purple { color: #391085; }  /* 11.93:1 */
+:root:not([data-theme='dark']) .ant-tag-volcano{ color: #AD2102; }
+:root:not([data-theme='dark']) .ant-tag-magenta{ color: #9E1068; }
+:root:not([data-theme='dark']) .ant-tag-geekblue { color: #1D39C4; }
+:root:not([data-theme='dark']) .ant-tag-lime   { color: #3F6600; }
+
+/* ---------------------------------------------------------------------------
+   2. Nút "nguy hiểm" dạng viền/chữ ở chế độ tối
+   AntD lấy thẳng colorError (#DC2626) làm màu chữ. Trên nền tối #191F33 chỉ
+   đạt 3.38:1. Không thể sửa bằng cách đổi colorError trong ConfigProvider: màu
+   đó đồng thời là NỀN của nút nguy hiểm dạng đặc (chữ trắng), làm sáng lên thì
+   nút đặc lại hỏng. Vì vậy chỉ nâng màu cho các biến thể KHÔNG phải nền đặc.
+   --------------------------------------------------------------------------- */
+[data-theme='dark'] .ant-btn-dangerous:not(.ant-btn-primary) {
+  color: var(--color-danger-text);          /* #FF8A8A — 7.20:1 trên bề mặt tối */
+  border-color: var(--color-danger-text);
+}
+[data-theme='dark'] .ant-btn-dangerous:not(.ant-btn-primary):hover {
+  color: #FFB3B3 !important;
+  border-color: #FFB3B3 !important;
+}
+/* Mục nguy hiểm trong Dropdown (vd "Đăng xuất") cũng lấy colorError */
+[data-theme='dark'] .ant-dropdown-menu-item-danger {
+  color: var(--color-danger-text) !important;
+}

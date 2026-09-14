@@ -1,0 +1,269 @@
+/* =============================================================================
+   NEXTECH — TOKEN LAYER
+   Tầng duy nhất được phép khai báo giá trị thô (hex, px, ms).
+   Mọi file khác chỉ được dùng var(--...). Không viết hex trong component.
+
+   Cấu trúc 2 tầng:
+     1. PRIMITIVE  — thang giá trị thuần (--brand-500, --ink-700, --space-4)
+     2. SEMANTIC   — vai trò sử dụng (--color-text, --color-surface, --cta-bg)
+   Component chỉ dùng tầng SEMANTIC. Đổi theme = đổi tầng semantic, primitive giữ nguyên.
+============================================================================= */
+
+:root {
+  /* ===========================================================================
+     1. PRIMITIVE — MÀU
+     ========================================================================= */
+
+  /* ---- Ember Orange: thang màu thương hiệu, nội suy từ #F26D21 gốc ---- */
+  --brand-50:  #FFF4ED;
+  --brand-100: #FFE6D5;
+  --brand-200: #FFC9AA;
+  --brand-300: #FDA474;
+  --brand-400: #FB7C3C;
+  --brand-500: #F26D21;   /* màu nhận diện gốc — chỉ dùng cho MẢNG TRANG TRÍ */
+  --brand-600: #E8530E;
+  --brand-700: #C2410C;   /* nền hành động: chữ trắng đạt 5.18:1 */
+  --brand-800: #9A3412;
+  --brand-900: #7C2D12;
+
+  /* ---- Ink: thang trung tính ngả navy, khớp #1A1A2E của thương hiệu ---- */
+  --ink-0:   #FFFFFF;
+  --ink-25:  #FCFCFD;
+  --ink-50:  #F7F8FA;
+  --ink-100: #F1F3F7;
+  --ink-200: #E5E8EF;
+  --ink-300: #D3D8E2;
+  --ink-400: #9AA3B2;
+  --ink-500: #6B7280;
+  --ink-600: #4B5565;
+  --ink-700: #344054;
+  --ink-800: #202939;
+  --ink-900: #1A1A2E;   /* navy thương hiệu — header, footer */
+  --ink-925: #16213E;   /* navy hơi ngả lam, dùng làm điểm giữa các dải chuyển màu */
+  --ink-950: #0F1526;
+
+  /* ---- Màu trạng thái ---- */
+  --green-50:  #E7F7F0;  --green-500: #0E9F6E;  --green-700: #036C4B;
+  --amber-50:  #FEF4E6;  --amber-500: #D97706;  --amber-700: #92400E;
+  --red-50:    #FEECEC;  --red-500:   #DC2626;  --red-700:   #A81616;
+  --blue-50:   #EAF1FE;  --blue-500:  #2563EB;  --blue-700:  #1D4ED8;
+
+  /* ---- Đỏ giá bán: tách riêng khỏi đỏ lỗi, đây là màu bán hàng ---- */
+  --price-500: #D0021B;  /* 5.67:1 trên nền trắng */
+
+  /* ---- Màu lẻ có vai trò riêng ---- */
+  --bronze-300: #F0B46A;  /* đồng vàng — hoạ tiết trống đồng Đông Sơn ở hero */
+  --online-400: #4ADE9E;  /* chấm "đang trực tuyến" trên nền navy, 9.5:1 */
+
+  /* ===========================================================================
+     2. PRIMITIVE — KHÔNG GIAN / HÌNH KHỐI / THỜI GIAN
+     ========================================================================= */
+
+  /* ---- Thang giãn cách, bước 4px (density: standard) ---- */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ---- Bo góc ---- */
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   14px;
+  --radius-xl:   20px;
+  --radius-2xl:  28px;
+  --radius-full: 999px;
+
+  /* ---- Đổ bóng: 2 lớp (viền tiếp xúc + toả) để khối nổi mà không bị đục ---- */
+  --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.10);
+  --shadow-md: 0 2px 4px -2px rgba(16, 24, 40, 0.06), 0 4px 8px -2px rgba(16, 24, 40, 0.10);
+  --shadow-lg: 0 4px 6px -2px rgba(16, 24, 40, 0.03), 0 12px 16px -4px rgba(16, 24, 40, 0.08);
+  --shadow-xl: 0 8px 8px -4px rgba(16, 24, 40, 0.04), 0 20px 24px -4px rgba(16, 24, 40, 0.10);
+  --shadow-brand: 0 8px 20px -6px rgba(194, 65, 12, 0.42);
+
+  /* ---- Chữ ---- */
+  --font-display: 'Be Vietnam Pro', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-body: 'Nunito Sans', 'Be Vietnam Pro', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --text-xs:   12px;   --leading-xs:   16px;
+  --text-sm:   13px;   --leading-sm:   20px;
+  --text-base: 15px;   --leading-base: 23px;
+  --text-md:   16px;   --leading-md:   26px;   /* cỡ tối thiểu cho đoạn văn */
+  --text-lg:   18px;   --leading-lg:   28px;
+  --text-xl:   20px;   --leading-xl:   30px;
+  --text-2xl:  24px;   --leading-2xl:  32px;
+  --text-3xl:  30px;   --leading-3xl:  38px;
+  --text-4xl:  clamp(28px, 3.6vw, 40px);
+  --text-5xl:  clamp(34px, 5.4vw, 60px);
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
+
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.08em;
+
+  /* ---- Chuyển động (tier: Standard) ---- */
+  --dur-fast:   150ms;
+  --dur-base:   220ms;
+  --dur-slow:   320ms;
+  --dur-slower: 480ms;
+  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  /* ---- Tầng xếp chồng: khai báo tập trung để không còn z-index rải rác ---- */
+  --z-base:    0;
+  --z-raised:  10;
+  --z-sticky:  100;
+  --z-header:  200;
+  --z-overlay: 900;
+  --z-fab:     920;
+  --z-chat:    930;
+  /* AntD dùng 1000+ cho modal/drawer/popup — không chiếm dải đó */
+
+  /* ---- Dải chuyển màu navy dùng chung cho header, hero và thanh chat ----
+     Gom về một chỗ để ba nơi không bao giờ lệch tông nhau. */
+  --gradient-navy: linear-gradient(135deg, var(--ink-900) 0%, var(--ink-925) 100%);
+  --gradient-navy-deep: linear-gradient(
+    135deg, var(--ink-900) 0%, var(--ink-925) 52%, var(--ink-950) 100%
+  );
+
+  /* ---- Bề rộng nội dung ---- */
+  --container-max: 1240px;
+  --container-pad: var(--space-6);
+
+  /* ===========================================================================
+     3. SEMANTIC — CHẾ ĐỘ SÁNG (mặc định)
+     ========================================================================= */
+
+  /* ---- Nền & bề mặt ---- */
+  --color-bg:              var(--ink-50);
+  --color-bg-subtle:       var(--ink-100);
+  --color-surface:         var(--ink-0);
+  --color-surface-raised:  var(--ink-0);
+  --color-surface-sunken:  var(--ink-50);
+  --color-surface-inverse: var(--ink-900);
+
+  /* ---- Viền ---- */
+  --color-border:        var(--ink-200);
+  --color-border-strong: var(--ink-300);
+  --color-border-inverse: rgba(255, 255, 255, 0.14);
+
+  /* ---- Chữ. Mọi cặp dưới đây đã kiểm tương phản ≥ 4.5:1 trên nền tương ứng ---- */
+  --color-text:         var(--ink-900);   /* 17.06:1 / trắng */
+  --color-text-strong:  var(--ink-950);
+  --color-text-muted:   var(--ink-600);   /* 7.54:1 / trắng */
+  --color-text-subtle:  var(--ink-500);   /* 4.83:1 / trắng — ngưỡng tối thiểu */
+  --color-text-inverse: var(--ink-0);
+  /* --ink-400 KHÔNG được dùng cho chữ (2.54:1) — chỉ cho icon trang trí, viền */
+
+  /* ---- Chữ trên các mảng NAVY CỐ ĐỊNH (header, footer, thanh tiện ích) ----
+     Khác với --color-text-inverse ở chỗ: hai token dưới đây KHÔNG đảo theo
+     chế độ sáng/tối, vì nền của chúng luôn là navy ở cả hai chế độ. Dùng nhầm
+     token đảo màu vào đây sẽ cho chữ tối trên nền tối ở chế độ tối. */
+  --color-on-navy: #FFFFFF;              /* 17.06:1 trên --ink-900 */
+  --color-on-navy-muted: rgba(255, 255, 255, 0.74);  /* ~7.6:1 trên --ink-900 */
+
+  /* ---- Thương hiệu, tách theo vai trò vì cam gốc không đủ tương phản ----
+     Cam #F26D21 + chữ trắng = 3.01:1 → KHÔNG đạt AA cho chữ thường.
+     Vì vậy: -accent dùng cho mảng trang trí, -cta dùng cho nền có chữ. */
+  --color-accent:        var(--brand-500);  /* gạch tiêu đề, viền, icon, gradient */
+  --color-accent-hover:  var(--brand-600);
+  --color-accent-soft:   var(--brand-50);   /* nền tint */
+  --color-accent-border: var(--brand-200);
+
+  --color-cta-bg:         var(--brand-700); /* 5.18:1 với chữ trắng */
+  --color-cta-bg-hover:   var(--brand-800);
+  --color-cta-bg-active:  var(--brand-900);
+  --color-cta-text:       var(--ink-0);
+  --color-accent-text:    var(--brand-700); /* 5.40:1 — chữ/link cam trên nền sáng */
+
+  /* ---- Trạng thái ---- */
+  --color-success: var(--green-500);  --color-success-soft: var(--green-50);  --color-success-text: var(--green-700);
+  --color-warning: var(--amber-500);  --color-warning-soft: var(--amber-50);  --color-warning-text: var(--amber-700);
+  --color-danger:  var(--red-500);    --color-danger-soft:  var(--red-50);    --color-danger-text:  var(--red-700);
+  --color-info:    var(--blue-500);   --color-info-soft:    var(--blue-50);   --color-info-text:    var(--blue-700);
+
+  /* ---- Bán hàng ---- */
+  --color-price:     var(--price-500);
+  --color-price-old: var(--ink-500);
+
+  /* ---- Vòng focus bàn phím ---- */
+  --focus-ring: 0 0 0 3px rgba(242, 109, 33, 0.42);
+  --focus-ring-offset: 2px;
+
+  color-scheme: light;
+}
+
+/* =============================================================================
+   4. SEMANTIC — CHẾ ĐỘ TỐI
+   Chỉ ánh xạ lại tầng semantic; primitive giữ nguyên.
+   Áp bằng [data-theme="dark"] trên <html>, KHÔNG dùng prefers-color-scheme trần
+   để khu vực quản trị (đang dùng màu cứng) có thể ép sáng bằng data-theme="light".
+============================================================================= */
+
+[data-theme='dark'] {
+  --color-bg:              #0E1220;
+  --color-bg-subtle:       #131829;
+  --color-surface:         #191F33;
+  --color-surface-raised:  #1F2740;
+  --color-surface-sunken:  #0B0F1B;
+  --color-surface-inverse: var(--ink-0);
+
+  --color-border:        #2A3350;
+  --color-border-strong: #3B4670;
+  --color-border-inverse: rgba(15, 21, 38, 0.14);
+
+  --color-text:         #EEF1F8;
+  --color-text-strong:  #FFFFFF;
+  --color-text-muted:   #AAB4CC;
+  --color-text-subtle:  #8B96B2;
+  --color-text-inverse: var(--ink-950);
+
+  /* Trên nền tối, cam đậm biến thành bùn — đẩy lên bậc sáng hơn */
+  --color-accent:        var(--brand-400);
+  --color-accent-hover:  var(--brand-300);
+  --color-accent-soft:   rgba(242, 109, 33, 0.14);
+  --color-accent-border: rgba(242, 109, 33, 0.34);
+
+  --color-cta-bg:        var(--brand-500);
+  --color-cta-bg-hover:  var(--brand-400);
+  --color-cta-bg-active: var(--brand-600);
+  --color-cta-text:      #1A0C03;   /* chữ tối trên cam sáng — đạt tương phản */
+  --color-accent-text:   var(--brand-300);
+
+  --color-success-soft: rgba(14, 159, 110, 0.16);  --color-success-text: #4ADE9E;
+  --color-warning-soft: rgba(217, 119, 6, 0.16);   --color-warning-text: #FBBF4C;
+  --color-danger-soft:  rgba(220, 38, 38, 0.16);   --color-danger-text:  #FF8A8A;
+  --color-info-soft:    rgba(37, 99, 235, 0.16);   --color-info-text:    #8FB4FF;
+
+  --color-price:     #FF6B6B;
+  --color-price-old: #8B96B2;
+
+  /* Bóng trên nền tối gần như vô hình — thay bằng bóng đen sâu hơn */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.40);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.50);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.55);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.60);
+  --shadow-brand: 0 8px 20px -6px rgba(242, 109, 33, 0.40);
+
+  --focus-ring: 0 0 0 3px rgba(253, 164, 116, 0.48);
+
+  color-scheme: dark;
+}
