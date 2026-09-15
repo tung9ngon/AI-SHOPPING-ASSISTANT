@@ -1,0 +1,41 @@
+/* =============================================================================
+   THANH TOÁN
+   Chỉ phần trình bày — luồng đặt hàng, voucher, PayOS giữ nguyên trong .tsx.
+============================================================================= */
+
+.checkout__head {
+  margin: 0 0 var(--space-5);
+  font-size: var(--text-2xl);
+}
+
+/* Khối tóm tắt dính theo cuộn: cột trái (địa chỉ + sản phẩm + phương thức)
+   thường dài hơn cột phải, nếu không dính thì nút "Đặt hàng" trôi mất khi
+   người dùng cuộn xuống chọn phương thức thanh toán. */
+.checkout__summary {
+  position: sticky;
+  top: calc(68px + var(--space-4));
+}
+
+/* Ô chọn địa chỉ / phương thức thanh toán: cho biết cái nào đang được chọn
+   bằng viền + nền, thay vì chỉ dựa vào chấm radio nhỏ. */
+.checkout__option {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--dur-fast) var(--ease-in-out),
+              background-color var(--dur-fast) var(--ease-in-out);
+}
+.checkout__option:hover {
+  border-color: var(--color-accent-border);
+}
+.ant-radio-wrapper-checked.checkout__option {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+@media (max-width: 991px) {
+  .checkout__summary {
+    position: static;
+  }
+}

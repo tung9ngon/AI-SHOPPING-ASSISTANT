@@ -1,0 +1,112 @@
+/* =============================================================================
+   DANH SÁCH ĐƠN HÀNG
+============================================================================= */
+
+/* Dải lọc trạng thái — cuộn ngang trên màn hẹp thay vì tràn khỏi màn hình */
+.orders__filters {
+  margin-bottom: var(--space-5);
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+  scrollbar-width: none;
+}
+.orders__filters::-webkit-scrollbar {
+  display: none;
+}
+
+.orders__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ocard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  transition: border-color var(--dur-base) var(--ease-in-out),
+              box-shadow var(--dur-base) var(--ease-out),
+              transform var(--dur-base) var(--ease-out);
+}
+.ocard:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-accent-border);
+  box-shadow: var(--shadow-md);
+}
+.ocard:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
+}
+
+.ocard__id {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.ocard__code {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  /* Mã đơn là chuỗi hex — chữ số đều bề ngang cho dễ đối chiếu */
+  font-variant-numeric: tabular-nums;
+}
+.ocard__meta {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+.ocard__total {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: var(--weight-extrabold);
+  color: var(--color-price);
+  white-space: nowrap;
+}
+.ocard__chev {
+  color: var(--color-text-subtle);
+  font-size: var(--text-sm);
+  transition: translate var(--dur-fast) var(--ease-out);
+}
+.ocard:hover .ocard__chev {
+  translate: 3px 0;
+}
+
+.orders__pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-6);
+}
+
+/* Khối rỗng / lỗi dùng chung cho các trang trong khu tài khoản */
+.account__panel {
+  padding: var(--space-8) var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+@media (max-width: 575px) {
+  /* Một cột: để nguyên 2 cột thì cột tiền chiếm chỗ khiến dòng "2 sản phẩm"
+     bị bẻ làm đôi. Xếp tiền xuống dưới, căn phải. */
+  .ocard {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+    padding: var(--space-4);
+  }
+  .ocard__total {
+    text-align: end;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+  }
+  /* Mũi tên chỉ là trang trí — bỏ trên màn hẹp */
+  .ocard__chev {
+    display: none;
+  }
+}

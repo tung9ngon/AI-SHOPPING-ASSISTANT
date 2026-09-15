@@ -1,0 +1,171 @@
+/* =============================================================================
+   KHUNG CHUNG CHO CÁC TRANG XÁC THỰC
+   Bản cũ là một thẻ trắng đơn độc giữa nền chuyển màu hồng cam, không có nhận
+   diện gì ngoài logo. Ở đây tách 2 cột: cột thương hiệu (navy, hoạ tiết như
+   hero trang chủ) và cột biểu mẫu. Màn hẹp thì cột thương hiệu rút thành dải
+   tiêu đề mỏng để không đẩy ô nhập xuống quá sâu.
+============================================================================= */
+
+.auth {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--color-bg);
+}
+
+/* ---- Cột thương hiệu ---- */
+.auth__brand {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: var(--space-16) var(--space-12);
+  background:
+    radial-gradient(ellipse 60% 60% at 80% 18%, rgba(242, 109, 33, 0.30) 0%, transparent 62%),
+    var(--gradient-navy-deep);
+  color: var(--color-on-navy);
+  overflow: hidden;
+  isolation: isolate;
+}
+/* Vành tròn đồng tâm — cùng ngôn ngữ hoạ tiết với hero trang chủ */
+.auth__rings {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  width: 900px;
+  height: 900px;
+  background: repeating-radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.09) 0 1px,
+    transparent 1px 46px
+  );
+  mask-image: radial-gradient(circle at center, #000 0%, transparent 68%);
+  pointer-events: none;
+  z-index: var(--z-base);
+}
+/* Nâng nội dung lên trên lớp hoạ tiết.
+   Phải loại trừ .auth__rings: nó cùng độ ưu tiên với bộ chọn này nhưng đứng
+   TRƯỚC trong file, nên nếu không loại trừ thì `position: relative` ở đây sẽ
+   ghi đè `absolute` của nó — khối hoạ tiết 900x900 rơi vào luồng và đẩy logo,
+   tiêu đề, danh sách lợi ích xuống dưới màn hình. */
+.auth__brand > *:not(.auth__rings) {
+  position: relative;
+  z-index: var(--z-raised);
+}
+
+.auth__logo {
+  display: inline-flex;
+  align-self: flex-start;
+  border-radius: var(--radius-sm);
+}
+.auth__tagline {
+  margin: 0;
+  max-width: 18ch;
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-extrabold);
+  line-height: 1.15;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-on-navy);
+  text-wrap: balance;
+}
+.auth__tagline em {
+  font-style: normal;
+  color: var(--brand-300);
+}
+
+.auth__points {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.auth__point {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-base);
+  color: var(--color-on-navy-muted);
+}
+.auth__point .anticon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  background: rgba(242, 109, 33, 0.18);
+  border: 1px solid rgba(242, 109, 33, 0.38);
+  color: var(--brand-300);
+  font-size: var(--text-md);
+}
+
+/* ---- Cột biểu mẫu ---- */
+.auth__panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-10) var(--space-6);
+}
+.auth__card {
+  width: 100%;
+  max-width: 420px;
+}
+.auth__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+.auth__back:hover {
+  color: var(--color-accent-text);
+}
+.auth__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-2xl);
+}
+.auth__subtitle {
+  margin: 0 0 var(--space-8);
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+}
+/* Logo chỉ hiện ở cột phải khi cột thương hiệu đã bị ẩn (màn hẹp) */
+.auth__mobile-logo {
+  display: none;
+  margin-bottom: var(--space-6);
+}
+
+.auth__foot {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+}
+
+/* ---- Điểm ngắt ---- */
+@media (max-width: 991px) {
+  .auth {
+    grid-template-columns: 1fr;
+  }
+  /* Bỏ hẳn cột thương hiệu thay vì xếp chồng lên trên: trên điện thoại,
+     một khối navy cao 300px sẽ đẩy ô email xuống dưới màn hình đầu tiên. */
+  .auth__brand {
+    display: none;
+  }
+  .auth__mobile-logo {
+    display: block;
+  }
+  .auth__panel {
+    align-items: flex-start;
+    padding-top: var(--space-10);
+  }
+}

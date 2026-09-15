@@ -1,0 +1,123 @@
+/* =============================================================================
+   THEO DÕI GIÁ
+============================================================================= */
+
+.alerts__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.alert {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  transition: border-color var(--dur-base) var(--ease-in-out),
+              box-shadow var(--dur-base) var(--ease-out);
+}
+.alert:hover {
+  box-shadow: var(--shadow-md);
+}
+/* Đã chạm mức giá mong muốn: đổi viền + nền để nổi hẳn khỏi các dòng còn lại */
+.alert--reached {
+  border-color: var(--color-success);
+  background: var(--color-success-soft);
+}
+
+.alert__img {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+  color: var(--ink-400);
+  font-size: 24px;
+  overflow: hidden;
+}
+.alert__img img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.alert__name {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  line-height: 1.4;
+}
+.alert__name:hover {
+  color: var(--color-accent-text);
+}
+
+.alert__prices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  margin-top: var(--space-3);
+}
+.alert__price small {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+.alert__price b {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+.alert__price--target b {
+  color: var(--color-accent-text);
+}
+
+/* Khoảng cách còn lại tới mức giá mong muốn — tính từ 2 số đã có, không ước lượng */
+.alert__gap {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+.alert__gap b {
+  color: var(--color-price);
+  font-variant-numeric: tabular-nums;
+}
+.alert__gap--reached {
+  color: var(--color-success-text);
+  font-weight: var(--weight-semibold);
+}
+
+.alert__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 767px) {
+  .alert {
+    grid-template-columns: 64px minmax(0, 1fr);
+    row-gap: var(--space-3);
+  }
+  .alert__img {
+    width: 64px;
+    height: 64px;
+    align-self: start;
+  }
+  /* Nút huỷ xuống hàng dưới, căn phải */
+  .alert__action {
+    grid-column: 2;
+    justify-self: end;
+  }
+  .alert__prices {
+    gap: var(--space-4);
+  }
+}

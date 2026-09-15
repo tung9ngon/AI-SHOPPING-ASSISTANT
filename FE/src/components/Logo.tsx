@@ -22,9 +22,9 @@ export default function Logo({ height = 40, white = false, style, className }: L
     return (
       <span
         className={className}
-        style={{ fontWeight: 800, whiteSpace: 'nowrap', color: white ? '#fff' : '#1a1a2e', ...style }}
+        style={{ fontWeight: 800, whiteSpace: 'nowrap', color: white ? 'var(--color-on-navy)' : 'var(--ink-900)', ...style }}
       >
-        Nex<span style={{ color: '#f26d21' }}>Tech</span>
+        Nex<span style={{ color: 'var(--color-accent)' }}>Tech</span>
       </span>
     );
   }

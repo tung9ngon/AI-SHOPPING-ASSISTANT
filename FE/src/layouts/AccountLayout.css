@@ -1,0 +1,149 @@
+/* =============================================================================
+   KHUNG KHU TÀI KHOẢN
+   Gom 5 trang (thông tin, đơn hàng, sổ địa chỉ, theo dõi giá) vào một khung có
+   điều hướng dùng chung. Trước đây chúng chỉ vào được qua dropdown ở header,
+   nên khi đang ở trang đơn hàng thì không có đường sang sổ địa chỉ.
+============================================================================= */
+
+.account {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+/* ---- Cột điều hướng ---- */
+.account__side {
+  position: sticky;
+  top: calc(68px + var(--space-4));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.account__card {
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.account__me {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.account__me-text {
+  min-width: 0;
+}
+.account__me-name {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account__me-mail {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account__nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+}
+.account__link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  transition: background-color var(--dur-fast) var(--ease-in-out),
+              color var(--dur-fast) var(--ease-in-out);
+}
+.account__link .anticon {
+  font-size: var(--text-md);
+}
+.account__link:hover {
+  background: var(--color-bg-subtle);
+  color: var(--color-text);
+}
+/* Trạng thái đang xem: đổi cả nền, màu chữ VÀ độ đậm — không dựa vào mỗi màu,
+   để người khó phân biệt màu vẫn nhận ra mục đang mở. */
+.account__link[aria-current='page'] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+  font-weight: var(--weight-bold);
+}
+
+.account__logout {
+  margin-top: var(--space-1);
+  padding: var(--space-2) var(--space-2) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+/* ---- Tiêu đề trang con, dùng chung cho cả 5 trang ---- */
+.account__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+.account__title {
+  margin: 0;
+  font-size: var(--text-2xl);
+}
+.account__subtitle {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* ---- Màn hẹp: điều hướng thành dải chip cuộn ngang ---- */
+@media (max-width: 991px) {
+  .account {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+  .account__side {
+    position: static;
+  }
+  /* Thẻ hồ sơ trùng thông tin đã có ở header trên màn hẹp -> ẩn đi cho gọn */
+  .account__card--me {
+    display: none;
+  }
+  .account__nav {
+    flex-direction: row;
+    gap: var(--space-2);
+    overflow-x: auto;
+    padding: var(--space-2);
+    scrollbar-width: none;
+  }
+  .account__nav::-webkit-scrollbar {
+    display: none;
+  }
+  .account__link {
+    flex: none;
+    white-space: nowrap;
+    border: 1px solid var(--color-border);
+  }
+  .account__link[aria-current='page'] {
+    border-color: var(--color-accent);
+  }
+  .account__logout {
+    display: none; /* đã có nút Đăng xuất trong drawer của header */
+  }
+}

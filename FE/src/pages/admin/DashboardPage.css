@@ -104,41 +104,234 @@
   border-radius: 0 8px 8px 0;
 }
 
-.admin-bar-chart {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(28px, 1fr));
-  align-items: end;
-  gap: 8px;
-  height: 224px;
-  padding: 38px 18px 0;
+.admin-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.admin-bar-item {
+.admin-panel-sub {
+  display: block;
+  margin-top: 4px;
+  color: #8b8f96;
+  font-size: 12px;
+}
+
+.admin-panel-tip {
+  color: #b0b3b9;
+  font-size: 12px;
+}
+
+/* ===== Biểu đồ doanh thu ===== */
+.admin-chart {
   display: grid;
-  grid-template-rows: 1fr 22px;
-  align-items: end;
-  height: 100%;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.admin-chart-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  /* trừ đi dải nhãn tháng để các mốc thẳng hàng với lưới */
+  height: calc(224px - 24px);
+  color: #b0b3b9;
+  font-size: 11px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* cao 1px + line-height 1px => tâm chữ trùng đúng đường lưới tương ứng */
+.admin-chart-axis span {
+  height: 1px;
+  line-height: 1px;
+}
+
+.admin-chart-plot {
+  position: relative;
+  height: 224px;
+}
+
+.admin-chart-grid {
+  position: absolute;
+  inset: 0 0 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.admin-chart-grid i {
+  height: 1px;
+  background: #f0f1f3;
+}
+
+.admin-chart-grid i:last-child {
+  background: #e3e5e8;
+}
+
+.admin-chart-cols {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.admin-chart-col {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.admin-chart-col:focus-visible {
+  outline: none;
+}
+
+.admin-chart-wash {
+  position: absolute;
+  inset: 0 -3px 24px;
+  border-radius: 6px;
+  background: #f26d21;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.admin-chart-col.is-on .admin-chart-wash {
+  opacity: 0.07;
+}
+
+.admin-chart-col:focus-visible .admin-chart-wash {
+  opacity: 0.14;
+}
+
+.admin-chart-bar {
+  position: relative;
+  width: 100%;
+  max-width: 44px;
+  margin: 0 auto 24px;
+  border-radius: 4px 4px 0 0;
+  /* Cột doanh thu dùng gradient cam thương hiệu (thay xanh dương) */
+  background: linear-gradient(180deg, #ffb07a 0%, #f26d21 100%);
+  transition: opacity 0.15s ease, filter 0.15s ease;
+}
+
+/* Cột có doanh thu nhưng quá nhỏ vẫn phải nhìn thấy; cột bằng 0 thì để trống. */
+.admin-chart-bar:not([style*="height: 0%"]) {
+  min-height: 3px;
+}
+
+.admin-chart-bar[style*="height: 0%"] {
+  background: none;
+}
+
+.admin-chart-plot.is-focused .admin-chart-col:not(.is-on) .admin-chart-bar {
+  opacity: 0.45;
+}
+
+.admin-chart-col.is-on .admin-chart-bar {
+  filter: saturate(1.15);
+  box-shadow: 0 -2px 10px rgba(242, 109, 33, 0.35);
+}
+
+.admin-chart-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  line-height: 24px;
   color: #9a9da3;
   font-size: 12px;
   text-align: center;
 }
 
-.admin-bar {
-  width: 100%;
-  max-width: 78px;
-  min-height: 14px;
-  margin: 0 auto;
-  border-radius: 5px 5px 0 0;
-  /* Cột doanh thu dùng gradient cam thương hiệu (thay xanh dương) */
-  background: linear-gradient(180deg, #ffb07a 0%, #f26d21 100%);
+.admin-chart-col.is-on .admin-chart-label {
+  color: #f26d21;
+  font-weight: 700;
+}
+
+.admin-chart-tip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 140px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  transform: translateX(-50%);
+  border-radius: 8px;
+  background: #23262d;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  text-align: left;
+  pointer-events: none;
+}
+
+.admin-chart-tip.is-start {
+  left: 0;
+  transform: none;
+}
+
+.admin-chart-tip.is-end {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.admin-chart-tip-title {
+  color: #a7abb3;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.admin-chart-tip-value {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-chart-tip-meta {
+  color: #c6c9ce;
+  font-size: 12px;
+}
+
+.admin-panel-hint {
+  margin-top: 12px;
+  color: #ad6800;
+  font-size: 12px;
 }
 
 .admin-status-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 6px;
   margin-top: 20px;
+}
+
+.admin-status-row {
+  padding: 8px 10px;
+  border-radius: 8px;
+  outline: none;
+  transition: background 0.15s ease;
+}
+
+.admin-status-row:hover,
+.admin-status-row:focus-visible {
+  background: #f7f8fa;
 }
 
 .admin-status-label {
@@ -149,21 +342,39 @@
   font-size: 13px;
 }
 
+.admin-status-label span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .admin-status-label span:last-child {
   color: #8b8f96;
 }
 
+.admin-status-label strong {
+  color: #24272d;
+  font-weight: 800;
+}
+
+.admin-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
 .admin-status-track {
   height: 7px;
-  margin-top: 6px;
+  margin-top: 8px;
   overflow: hidden;
   border-radius: 999px;
-  background: #ececec;
+  background: #eceef1;
 }
 
 .admin-status-fill {
   height: 100%;
   border-radius: inherit;
+  transition: width 0.4s ease;
 }
 
 .admin-orders-panel {
@@ -229,9 +440,19 @@
     min-height: 92px;
   }
 
-  .admin-bar-chart {
-    overflow-x: auto;
-    grid-template-columns: repeat(12, 48px);
-    padding-inline: 0;
+  .admin-chart {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .admin-chart-cols {
+    gap: 3px;
+  }
+
+  .admin-chart-tip {
+    min-width: 120px;
+  }
+
+  .admin-panel-tip {
+    display: none;
   }
 }

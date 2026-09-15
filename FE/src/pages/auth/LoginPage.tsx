@@ -33,7 +33,15 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthLayout title="Đăng nhập" subtitle="Chào mừng bạn quay lại 👋">
+    <AuthLayout
+      title="Đăng nhập"
+      subtitle="Chào mừng bạn quay lại"
+      footer={
+        <>
+          Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link>
+        </>
+      }
+    >
       <Form layout="vertical" onFinish={onFinish} requiredMark={false}>
         <Form.Item name="email" label="Email" rules={emailRules}>
           <Input prefix={<MailOutlined />} placeholder="email@example.com" size="large" />
@@ -47,7 +55,7 @@ export default function LoginPage() {
           <Input.Password prefix={<LockOutlined />} placeholder="Mật khẩu" size="large" />
         </Form.Item>
 
-        <div style={{ textAlign: 'right', marginBottom: 12 }}>
+        <div style={{ textAlign: 'right', marginBottom: 16 }}>
           <Link to="/forgot-password">Quên mật khẩu?</Link>
         </div>
 
@@ -57,10 +65,6 @@ export default function LoginPage() {
       </Form>
 
       <OAuthButtons />
-
-      <div style={{ textAlign: 'center', marginTop: 20 }}>
-        Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link>
-      </div>
     </AuthLayout>
   );
 }

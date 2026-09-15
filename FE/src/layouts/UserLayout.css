@@ -1,0 +1,291 @@
+/* =============================================================================
+   USER LAYOUT — thanh điều hướng & chân trang
+   Bản cũ đặt toàn bộ style inline trong JSX, kể cả hover phải xử lý bằng
+   onMouseEnter/onMouseLeave. Đưa hết về CSS: hover/focus do trình duyệt lo,
+   không tốn render React, và chế độ tối đổi theo token mà không cần sửa JS.
+============================================================================= */
+
+.ulayout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--color-bg);
+}
+
+/* ===========================================================================
+   THANH TIỆN ÍCH TRÊN CÙNG — chỉ hiện từ tablet trở lên
+   ========================================================================= */
+.utility-bar {
+  background: var(--ink-950);
+  color: var(--color-on-navy-muted);
+  font-size: var(--text-xs);
+}
+.utility-bar__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  height: 34px;
+}
+.utility-bar a {
+  color: var(--color-on-navy-muted);
+}
+.utility-bar a:hover {
+  color: var(--brand-300);
+}
+.utility-bar__group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+.utility-bar__hotline {
+  color: var(--brand-300);
+  font-weight: var(--weight-bold);
+}
+
+/* ===========================================================================
+   HEADER CHÍNH
+   ========================================================================= */
+.uheader {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  background: var(--gradient-navy);
+  /* Đường cam mảnh dưới đáy: điểm nhận diện thương hiệu, đồng thời tách
+     header khỏi nội dung khi cuộn mà không cần bóng nặng. */
+  border-bottom: 2px solid var(--color-accent);
+  box-shadow: var(--shadow-md);
+}
+.uheader__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  height: 68px;
+}
+.uheader__logo {
+  flex: none;
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+}
+
+/* ---- Ô tìm kiếm ---- */
+.uheader__search {
+  flex: 1;
+  min-width: 0;
+  max-width: 520px;
+}
+/* Bo tròn hết cỡ cho cụm input + nút, tạo hình viên thuốc liền mạch */
+.uheader__search .ant-input-affix-wrapper,
+.uheader__search .ant-input {
+  border-start-start-radius: var(--radius-full);
+  border-end-start-radius: var(--radius-full);
+  padding-inline-start: var(--space-5);
+}
+.uheader__search .ant-input-search-button {
+  border-start-end-radius: var(--radius-full) !important;
+  border-end-end-radius: var(--radius-full) !important;
+  padding-inline: var(--space-5);
+}
+
+/* ---- Điều hướng & hành động ---- */
+.uheader__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-inline-start: auto;
+}
+.uheader__link {
+  display: inline-flex;
+  /* .uheader__link dùng cho cả <a> và <button> (nút đổi sáng/tối). Thẻ button
+     mang sẵn nền + viền + font riêng của trình duyệt nên phải gỡ, nếu không
+     nút icon sẽ hiện thành ô xám nổi giữa thanh điều hướng tối. */
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  align-items: center;
+  gap: var(--space-2);
+  /* 44px chiều cao: đạt ngưỡng vùng chạm tối thiểu */
+  min-height: 44px;
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--color-on-navy);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  transition: background-color var(--dur-fast) var(--ease-in-out),
+              color var(--dur-fast) var(--ease-in-out);
+}
+.uheader__link:hover {
+  background: rgba(255, 255, 255, 0.10);
+  color: var(--color-on-navy);
+}
+.uheader__link--icon {
+  min-width: 44px;
+  justify-content: center;
+  padding-inline: var(--space-2);
+  font-size: var(--text-xl);
+}
+.uheader__link:focus-visible {
+  outline-color: var(--brand-300);
+}
+
+.uheader__account {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-md);
+  background: none;
+  border: none;
+  font: inherit;
+  color: var(--color-on-navy);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-in-out);
+}
+.uheader__account:hover {
+  background: rgba(255, 255, 255, 0.10);
+}
+.uheader__account-name {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+}
+
+/* Nút đăng nhập — dùng nền cam hành động (đạt tương phản với chữ trắng) */
+.uheader__cta.ant-btn {
+  background: var(--color-cta-bg);
+  border-color: transparent;
+  color: var(--color-cta-text);
+  font-weight: var(--weight-semibold);
+}
+.uheader__cta.ant-btn:hover {
+  background: var(--color-cta-bg-hover) !important;
+  color: var(--color-cta-text) !important;
+}
+
+/* ---- Hàng tìm kiếm riêng cho mobile ----
+   Ô tìm kiếm là hành động chính của trang thương mại điện tử; bản cũ giấu nó
+   vào drawer trên mobile nên phải mở menu mới tìm được hàng. Ở đây để nổi
+   ngay dưới header. */
+.uheader__mobile-search {
+  padding: var(--space-2) 0 var(--space-3);
+}
+
+/* ===========================================================================
+   NỘI DUNG
+   ========================================================================= */
+.ucontent {
+  flex: 1;
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding: var(--space-6) var(--container-pad) var(--space-12);
+}
+
+/* ===========================================================================
+   CHÂN TRANG
+   ========================================================================= */
+.ufooter {
+  background: var(--ink-900);
+  color: var(--color-on-navy-muted);
+  /* Vạch chuyển màu mảnh: khép lại nhận diện đã mở ở viền dưới header */
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg, var(--brand-500), var(--brand-700)) 1;
+}
+.ufooter__inner {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1.2fr;
+  gap: var(--space-10);
+  padding-block: var(--space-12) var(--space-8);
+}
+.ufooter__about p {
+  margin: var(--space-4) 0 0;
+  font-size: var(--text-sm);
+  line-height: 1.75;
+  max-width: 36ch;
+}
+.ufooter__heading {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-on-navy);
+}
+.ufooter__link {
+  display: block;
+  /* 36px: đủ rộng để bấm bằng ngón tay mà không làm danh sách quá thưa */
+  padding-block: var(--space-2);
+  color: var(--color-on-navy-muted);
+  font-size: var(--text-sm);
+  transition: color var(--dur-fast) var(--ease-in-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+.ufooter__link:hover {
+  color: var(--brand-300);
+  transform: translateX(3px);
+}
+.ufooter__contact {
+  font-size: var(--text-sm);
+  line-height: 2;
+}
+.ufooter__contact b {
+  color: var(--brand-300);
+}
+.ufooter__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-block: var(--space-5);
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  font-size: var(--text-xs);
+}
+
+/* ===========================================================================
+   DRAWER MOBILE
+   ========================================================================= */
+.udrawer__foot {
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+/* ===========================================================================
+   ĐIỂM NGẮT
+   ========================================================================= */
+@media (max-width: 991px) {
+  .ufooter__inner {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-8);
+  }
+  .ufooter__about {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 767px) {
+  .uheader__inner {
+    height: 58px;
+    gap: var(--space-3);
+  }
+  .ucontent {
+    padding-block: var(--space-4) var(--space-10);
+  }
+  .ufooter__inner {
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+    padding-block: var(--space-8) var(--space-6);
+  }
+  .ufooter__bottom {
+    justify-content: center;
+    text-align: center;
+  }
+}

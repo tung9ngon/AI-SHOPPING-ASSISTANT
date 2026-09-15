@@ -1,32 +1,18 @@
 import { useState } from 'react';
-import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { App, Button, Empty, InputNumber, Popconfirm, Result, Skeleton } from 'antd';
 import {
-  App,
-  Button,
-  Card,
-  Col,
-  Divider,
-  Empty,
-  InputNumber,
-  Popconfirm,
-  Result,
-  Row,
-  Skeleton,
-  Typography,
-} from 'antd';
-import {
+  ArrowRightOutlined,
   DeleteOutlined,
   PictureOutlined,
   ShoppingOutlined,
-  ArrowRightOutlined,
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { cartApi } from '../../api/cart';
 import { getErrorMessage } from '../../api/client';
 import { useCart } from '../../context/CartContext';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { formatVND } from '../../utils/format';
-
-const { Title, Text } = Typography;
+import './CartPage.css';
 
 export default function CartPage() {
   useDocumentTitle('Giỏ hàng');
@@ -40,6 +26,13 @@ export default function CartPage() {
   // rời khỏi ô (onBlur), tránh bắn PUT ở từng ký tự khi gõ số nhiều chữ số.
   const [qtyDraft, setQtyDraft] = useState<Record<string, number>>({});
 
+  const clearDraft = (itemId: string) =>
+    setQtyDraft((d) => {
+      const next = { ...d };
+      delete next[itemId];
+      return next;
+    });
+
   const changeQty = async (itemId: string, quantity: number) => {
     setBusyId(itemId);
     try {
@@ -49,23 +42,14 @@ export default function CartPage() {
       message.error(getErrorMessage(err));
     } finally {
       setBusyId(null);
-      setQtyDraft((d) => {
-        const next = { ...d };
-        delete next[itemId];
-        return next;
-      });
+      clearDraft(itemId);
     }
   };
 
   const commitQty = (itemId: string, currentQuantity: number) => {
     const draft = qtyDraft[itemId];
     if (draft != null && draft !== currentQuantity) changeQty(itemId, draft);
-    else
-      setQtyDraft((d) => {
-        const next = { ...d };
-        delete next[itemId];
-        return next;
-      });
+    else clearDraft(itemId);
   };
 
   const removeItem = async (itemId: string) => {
@@ -105,13 +89,10 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '60px 0' }}>
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="Giỏ hàng của bạn đang trống"
-        >
+      <div className="cart__empty">
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Giỏ hàng của bạn đang trống">
           <Link to="/products">
-            <Button type="primary" icon={<ShoppingOutlined />}>
+            <Button type="primary" size="large" icon={<ShoppingOutlined />}>
               Tiếp tục mua sắm
             </Button>
           </Link>
@@ -123,69 +104,34 @@ export default function CartPage() {
   const subtotal = Number(cart?.subtotal ?? 0);
 
   return (
-    <div>
-      <Title level={3} style={{ marginTop: 0 }}>
-        Giỏ hàng <Text type="secondary" style={{ fontSize: 16 }}>({itemCount} sản phẩm)</Text>
-      </Title>
+    <>
+      <h1 className="cart__head">
+        Giỏ hàng <span>({itemCount} sản phẩm)</span>
+      </h1>
 
-      <Row gutter={[24, 24]}>
-        {/* ===== Danh sách sản phẩm ===== */}
-        <Col xs={24} lg={16}>
-          <Card styles={{ body: { padding: 0 } }}>
-            {items.map((item, idx) => {
+      <div className="cart">
+        <div>
+          <div className="cart__list">
+            {items.map((item) => {
               const price = Number(item.product.price);
               const busy = busyId === item.id;
               return (
-                <div key={item.id}>
-                  {idx > 0 && <Divider style={{ margin: 0 }} />}
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: 16,
-                      padding: 16,
-                      alignItems: 'center',
-                      opacity: busy ? 0.6 : 1,
-                    }}
-                  >
-                    {/* Ảnh */}
-                    <Link to={`/products/${item.product.id}`}>
-                      {item.product.image ? (
-                        <img
-                          src={item.product.image}
-                          alt={item.product.name}
-                          style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8 }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            width: 80,
-                            height: 80,
-                            borderRadius: 8,
-                            background: '#f5f5f5',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#bbb',
-                            fontSize: 28,
-                          }}
-                        >
-                          <PictureOutlined />
-                        </div>
-                      )}
-                    </Link>
+                <div className="citem" key={item.id} data-busy={busy}>
+                  <Link className="citem__img" to={`/products/${item.product.id}`}>
+                    {item.product.image ? (
+                      <img src={item.product.image} alt={item.product.name} loading="lazy" />
+                    ) : (
+                      <PictureOutlined aria-hidden="true" />
+                    )}
+                  </Link>
 
-                    {/* Tên + đơn giá */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <Link
-                        to={`/products/${item.product.id}`}
-                        style={{ fontWeight: 600, color: 'inherit' }}
-                      >
-                        {item.product.name}
-                      </Link>
-                      <div style={{ color: '#888', marginTop: 4 }}>{formatVND(price)}</div>
-                    </div>
+                  <div className="citem__name">
+                    <Link to={`/products/${item.product.id}`}>{item.product.name}</Link>
+                    <div className="citem__unit tabular">{formatVND(price)} / sản phẩm</div>
+                  </div>
 
-                    {/* Số lượng: gõ tự do, chỉ gửi API khi rời ô (blur) hoặc Enter */}
+                  <div className="citem__qty">
+                    {/* Gõ tự do, chỉ gửi API khi rời ô (blur) hoặc nhấn Enter */}
                     <InputNumber
                       min={1}
                       precision={0}
@@ -196,71 +142,72 @@ export default function CartPage() {
                       }
                       onBlur={() => commitQty(item.id, item.quantity)}
                       onPressEnter={() => commitQty(item.id, item.quantity)}
-                      style={{ width: 90 }}
+                      style={{ width: 92 }}
+                      aria-label={`Số lượng ${item.product.name}`}
                     />
+                  </div>
 
-                    {/* Thành tiền */}
-                    <div style={{ width: 120, textAlign: 'right', fontWeight: 700, color: '#f5222d' }}>
-                      {formatVND(price * item.quantity)}
-                    </div>
+                  <div className="citem__total tabular">{formatVND(price * item.quantity)}</div>
 
-                    {/* Xoá */}
+                  <div className="citem__del">
                     <Popconfirm
                       title="Xoá sản phẩm này khỏi giỏ?"
                       okText="Xoá"
                       cancelText="Huỷ"
+                      okButtonProps={{ danger: true }}
                       onConfirm={() => removeItem(item.id)}
                     >
-                      <Button type="text" danger icon={<DeleteOutlined />} disabled={busy} />
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        disabled={busy}
+                        aria-label={`Xoá ${item.product.name} khỏi giỏ`}
+                      />
                     </Popconfirm>
                   </div>
                 </div>
               );
             })}
-          </Card>
+          </div>
 
           <div style={{ marginTop: 16 }}>
             <Link to="/products">
               <Button icon={<ShoppingOutlined />}>Tiếp tục mua sắm</Button>
             </Link>
           </div>
-        </Col>
+        </div>
 
-        {/* ===== Tóm tắt đơn hàng ===== */}
-        <Col xs={24} lg={8}>
-          <Card title="Tóm tắt đơn hàng">
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-              <Text>Tạm tính</Text>
-              <Text>{formatVND(subtotal)}</Text>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-              <Text>Phí vận chuyển</Text>
-              <Text type="secondary">Tính ở bước thanh toán</Text>
-            </div>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              Mã giảm giá sẽ được áp dụng ở bước thanh toán.
-            </Text>
-            <Divider style={{ margin: '16px 0' }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-              <Text strong style={{ fontSize: 16 }}>
-                Tổng cộng
-              </Text>
-              <Text strong style={{ fontSize: 20, color: '#f5222d' }}>
-                {formatVND(subtotal)}
-              </Text>
-            </div>
-            <Button
-              type="primary"
-              size="large"
-              block
-              icon={<ArrowRightOutlined />}
-              onClick={() => navigate('/checkout')}
-            >
-              Tiến hành thanh toán
-            </Button>
-          </Card>
-        </Col>
-      </Row>
-    </div>
+        <aside className="csummary" aria-label="Tóm tắt đơn hàng">
+          <h2 className="csummary__title">Tóm tắt đơn hàng</h2>
+
+          <div className="crow">
+            <span>Tạm tính ({itemCount} sản phẩm)</span>
+            <span className="tabular">{formatVND(subtotal)}</span>
+          </div>
+          <div className="crow">
+            <span>Phí vận chuyển</span>
+            <span>Tính ở bước thanh toán</span>
+          </div>
+
+          <p className="csummary__note">Mã giảm giá sẽ được áp dụng ở bước thanh toán.</p>
+
+          <div className="crow crow--total">
+            <span>Tổng cộng</span>
+            <b className="tabular">{formatVND(subtotal)}</b>
+          </div>
+
+          <Button
+            type="primary"
+            size="large"
+            block
+            icon={<ArrowRightOutlined />}
+            onClick={() => navigate('/checkout')}
+          >
+            Tiến hành thanh toán
+          </Button>
+        </aside>
+      </div>
+    </>
   );
 }

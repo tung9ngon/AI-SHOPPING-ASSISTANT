@@ -86,7 +86,15 @@ export default function RegisterPage() {
   };
 
   return (
-    <AuthLayout title="Đăng ký" subtitle="Tạo tài khoản mới">
+    <AuthLayout
+      title="Đăng ký"
+      subtitle="Tạo tài khoản mới chỉ trong ba bước"
+      footer={
+        <>
+          Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
+        </>
+      }
+    >
       <Steps
         size="small"
         current={step}
@@ -170,10 +178,6 @@ export default function RegisterPage() {
           </Button>
         </Form>
       )}
-
-      <div style={{ textAlign: 'center', marginTop: 20 }}>
-        Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
-      </div>
     </AuthLayout>
   );
 }

@@ -21,9 +21,13 @@ import {
 } from 'antd';
 import {
   BellOutlined,
+  CustomerServiceOutlined,
   HomeOutlined,
   PictureOutlined,
+  SafetyCertificateOutlined,
   ShoppingCartOutlined,
+  SyncOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { productApi, type ProductListItem } from '../../api/products';
@@ -37,8 +41,17 @@ import { useCart } from '../../context/CartContext';
 import ProductCard from '../../components/ProductCard';
 import ReviewsSection from './ReviewsSection';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import './ProductDetailPage.css';
 
-const { Title, Text, Paragraph } = Typography;
+const { Text, Paragraph } = Typography;
+
+// Cam kết bán hàng — nội dung tĩnh, giống dải cam kết ở trang chủ.
+const TRUST = [
+  { icon: <SafetyCertificateOutlined />, text: 'Chính hãng, bảo hành toàn quốc' },
+  { icon: <ThunderboltOutlined />, text: 'Giao hoả tốc nội thành trong 2 giờ' },
+  { icon: <SyncOutlined />, text: 'Đổi trả trong 7 ngày nếu lỗi' },
+  { icon: <CustomerServiceOutlined />, text: 'Tư vấn kỹ thuật 24/7' },
+];
 
 type ProductDetail = Product & { review_count: number };
 
@@ -171,16 +184,16 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <Row gutter={[32, 32]}>
-        <Col xs={24} md={10}>
-          <Card>
-            <Skeleton.Image active style={{ width: '100%', height: 360 }} />
-          </Card>
-        </Col>
-        <Col xs={24} md={14}>
+      <div className="pdetail">
+        <div className="pgallery">
+          <div className="pgallery__main">
+            <Skeleton.Image active style={{ width: '100%', height: 320 }} />
+          </div>
+        </div>
+        <div>
           <Skeleton active paragraph={{ rows: 8 }} />
-        </Col>
-      </Row>
+        </div>
+      </div>
     );
   }
 
@@ -219,7 +232,7 @@ export default function ProductDetailPage() {
   return (
     <div>
       <Breadcrumb
-        style={{ marginBottom: 16 }}
+        style={{ marginBottom: 24 }}
         items={[
           { title: <Link to="/"><HomeOutlined /> Trang chủ</Link> },
           ...(product.category
@@ -229,144 +242,125 @@ export default function ProductDetailPage() {
         ]}
       />
 
-      <Row gutter={[32, 32]}>
-        {/* ===== Gallery ===== */}
-        <Col xs={24} md={10}>
-          <Card styles={{ body: { padding: 12 } }}>
+      <div className="pdetail">
+        {/* ===== Thư viện ảnh ===== */}
+        <div className="pgallery">
+          <div className="pgallery__main">
             {images.length > 0 ? (
-              <>
-                <img
-                  src={images[activeImg]?.image_url}
-                  alt={product.name}
-                  style={{
-                    width: '100%',
-                    height: 360,
-                    objectFit: 'contain',
-                    background: '#fafafa',
-                    borderRadius: 8,
-                  }}
-                />
-                {images.length > 1 && (
-                  <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-                    {images.map((img, i) => (
-                      <img
-                        key={img.id}
-                        src={img.image_url}
-                        alt=""
-                        loading="lazy"
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`Xem ảnh ${i + 1}`}
-                        aria-current={i === activeImg}
-                        onClick={() => setActiveImg(i)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setActiveImg(i);
-                          }
-                        }}
-                        style={{
-                          width: 64,
-                          height: 64,
-                          objectFit: 'cover',
-                          borderRadius: 8,
-                          cursor: 'pointer',
-                          border: i === activeImg ? '2px solid #ff6a00' : '2px solid #eee',
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-              </>
+              <img src={images[activeImg]?.image_url} alt={product.name} />
             ) : (
-              <div
-                style={{
-                  height: 360,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: '#f5f5f5',
-                  borderRadius: 8,
-                  color: '#bbb',
-                  fontSize: 56,
-                }}
-              >
+              <span className="pgallery__noimg" aria-hidden="true">
                 <PictureOutlined />
-              </div>
+              </span>
             )}
-          </Card>
-        </Col>
+          </div>
 
-        {/* ===== Thông tin ===== */}
-        <Col xs={24} md={14}>
-          <Title level={2} style={{ marginTop: 0, marginBottom: 8 }}>
-            {product.name}
-          </Title>
+          {images.length > 1 && (
+            <div className="pgallery__thumbs">
+              {images.map((img, i) => (
+                <button
+                  key={img.id}
+                  type="button"
+                  className="pthumb"
+                  aria-current={i === activeImg}
+                  aria-label={`Xem ảnh ${i + 1} trên ${images.length}`}
+                  onClick={() => setActiveImg(i)}
+                >
+                  <img src={img.image_url} alt="" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
-          <Space size={[8, 8]} wrap style={{ marginBottom: 12 }}>
-            {product.brand && <Tag color="orange">{product.brand}</Tag>}
-            {product.category && <Tag>{product.category.name}</Tag>}
-            {product.tags?.map((t) => (
-              <Tag key={t.id} color="orange">
-                {t.name}
-              </Tag>
-            ))}
-          </Space>
+        {/* ===== Thông tin & mua hàng ===== */}
+        <div className="pinfo">
+          <h1 className="pinfo__title">{product.name}</h1>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <div className="pinfo__meta">
             {ratingNum != null ? (
-              <>
-                <Rate disabled allowHalf value={ratingNum} style={{ fontSize: 16 }} />
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <Rate disabled allowHalf value={ratingNum} style={{ fontSize: 15 }} />
                 <Text strong>{ratingNum.toFixed(1)}</Text>
-              </>
+              </span>
             ) : (
-              <Text type="secondary">Chưa có đánh giá</Text>
+              <span>Chưa có đánh giá</span>
             )}
-            <Text type="secondary">· {product.review_count} lượt đánh giá</Text>
+            <span className="pinfo__meta-sep" aria-hidden="true">|</span>
+            <span>{product.review_count} lượt đánh giá</span>
+            {product.brand && (
+              <>
+                <span className="pinfo__meta-sep" aria-hidden="true">|</span>
+                <span>
+                  Thương hiệu:{' '}
+                  <Link to={`/products?brand=${encodeURIComponent(product.brand)}`}>
+                    {product.brand}
+                  </Link>
+                </span>
+              </>
+            )}
           </div>
 
-          <div
-            style={{
-              background: '#fff7f0',
-              border: '1px solid #ffe2c9',
-              borderRadius: 12,
-              padding: '16px 20px',
-              marginBottom: 20,
-            }}
-          >
-            <Text style={{ fontSize: 30, fontWeight: 800, color: '#f5222d' }}>
-              {formatVND(product.price)}
-            </Text>
+          {(product.category || (product.tags?.length ?? 0) > 0) && (
+            <Space size={[8, 8]} wrap style={{ marginBottom: 20 }}>
+              {product.category && (
+                <Link to={`/products?categoryId=${product.category.id}`}>
+                  <Tag>{product.category.name}</Tag>
+                </Link>
+              )}
+              {product.tags?.map((t) => (
+                <Tag key={t.id} color="orange">
+                  {t.name}
+                </Tag>
+              ))}
+            </Space>
+          )}
+
+          <div className="pprice">
+            <div className="pprice__value tabular">{formatVND(product.price)}</div>
+            <p className="pprice__note">Đã bao gồm VAT · Chưa tính phí vận chuyển</p>
           </div>
 
-          <Space size="middle" wrap>
-            <Space>
-              <Text>Số lượng:</Text>
+          <div className="pbuy">
+            <span className="pbuy__qty">
+              <label htmlFor="buy-qty">Số lượng</label>
               <InputNumber
+                id="buy-qty"
                 min={1}
                 precision={0}
                 value={qty}
                 onChange={(v) => setQty(Math.max(1, Math.floor(v ?? 1)))}
+                style={{ width: 96 }}
               />
-            </Space>
+            </span>
             <Button
+              className="pbuy__main"
               type="primary"
               size="large"
               icon={<ShoppingCartOutlined />}
               loading={adding}
               onClick={addToCart}
             >
-              Thêm vào giỏ
+              Thêm vào giỏ hàng
             </Button>
             <Button size="large" icon={<BellOutlined />} onClick={openAlert}>
               Theo dõi giá
             </Button>
-          </Space>
-        </Col>
-      </Row>
+          </div>
+
+          <div className="ptrust">
+            {TRUST.map((t) => (
+              <div className="ptrust__item" key={t.text}>
+                <span aria-hidden="true">{t.icon}</span>
+                {t.text}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* ===== Tabs: Mô tả / Thông số / Đánh giá ===== */}
-      <Card style={{ marginTop: 32 }}>
+      <Card className="psection">
         <Tabs
           defaultActiveKey="desc"
           items={[
@@ -374,9 +368,7 @@ export default function ProductDetailPage() {
               key: 'desc',
               label: 'Mô tả',
               children: product.description ? (
-                <Paragraph style={{ whiteSpace: 'pre-wrap', fontSize: 15 }}>
-                  {product.description}
-                </Paragraph>
+                <p className="pdesc">{product.description}</p>
               ) : (
                 <Empty description="Chưa có mô tả" />
               ),
@@ -416,8 +408,10 @@ export default function ProductDetailPage() {
 
       {/* ===== Sản phẩm tương tự ===== */}
       {related.length > 0 && (
-        <div style={{ marginTop: 32 }}>
-          <Title level={4}>Sản phẩm tương tự</Title>
+        <section className="psection" aria-labelledby="sec-related">
+          <h2 id="sec-related" className="section-title" style={{ marginBottom: 20 }}>
+            Sản phẩm tương tự
+          </h2>
           <Row gutter={[16, 16]}>
             {related.map((p) => (
               <Col key={p.id} xs={12} sm={12} md={8} lg={6}>
@@ -425,14 +419,14 @@ export default function ProductDetailPage() {
               </Col>
             ))}
           </Row>
-        </div>
+        </section>
       )}
 
       {/* ===== Modal theo dõi giá ===== */}
       <Modal
         title={
           <>
-            <BellOutlined style={{ color: '#ff6a00' }} /> Theo dõi giá — {product.name}
+            <BellOutlined style={{ color: 'var(--color-accent)' }} /> Theo dõi giá — {product.name}
           </>
         }
         open={alertOpen}
