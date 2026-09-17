@@ -23,7 +23,7 @@ import {
   EnvironmentOutlined,
   RightOutlined,
 } from '@ant-design/icons';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Skeleton, Empty } from 'antd';
 import { orderApi } from '../../api/orders';
 import { paymentApi } from '../../api/payments';
@@ -50,6 +50,11 @@ export default function CheckoutPage() {
   const { cart, initialized, refresh } = useCart();
   const { message } = App.useApp();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Danh sách cart_item được tick chọn ở trang giỏ (truyền qua state điều
+  // hướng). Không có state (vd F5 lại trang) -> thanh toán cả giỏ như cũ.
+  const pickedIds: string[] | undefined = location.state?.itemIds;
 
   const [note, setNote] = useState('');
   const [method, setMethod] = useState<PaymentMethod>('cod');
@@ -95,8 +100,18 @@ export default function CheckoutPage() {
     amount: number;
   } | null>(null);
 
-  const items = cart?.items ?? [];
-  const subtotal = Number(cart?.subtotal ?? 0);
+  const allItems = cart?.items ?? [];
+  // Lọc theo lựa chọn ở giỏ; nếu lọc xong rỗng (state cũ, giỏ đã đổi) thì
+  // quay về cả giỏ để không chặn người dùng vô cớ.
+  const picked = pickedIds?.length
+    ? allItems.filter((it) => pickedIds.includes(it.id))
+    : allItems;
+  const items = picked.length > 0 ? picked : allItems;
+  // Tạm tính trên đúng các sản phẩm sẽ đặt (subtotal BE tính là của CẢ giỏ)
+  const subtotal = items.reduce(
+    (sum, it) => sum + Number(it.product.price) * it.quantity,
+    0,
+  );
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
   const discountAmount = useMemo(
     () => (discountVoucher ? calcVoucherAmount(discountVoucher, subtotal, shipping) : 0),
@@ -131,9 +146,11 @@ export default function CheckoutPage() {
     // lỗi thì không cho bấm đặt lại (tránh tạo đơn trùng) mà điều hướng sang đơn đã tạo.
     let createdOrderId: string | null = null;
     try {
-      // 1) Tạo đơn (BE tự tính lại tiền + xoá giỏ + snapshot địa chỉ đã chọn)
+      // 1) Tạo đơn (BE tự tính lại tiền + xoá các item đã đặt khỏi giỏ +
+      //    snapshot địa chỉ đã chọn). Gửi đúng danh sách item đang hiển thị.
       const orderRes = await orderApi.create({
         address_id: selectedAddressId,
+        item_ids: items.map((it) => it.id),
         discount_code: discountVoucher?.code,
         freeship_code: freeshipVoucher?.code,
         note: note.trim() || undefined,

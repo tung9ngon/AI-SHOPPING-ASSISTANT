@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Avatar,
   Badge,
@@ -17,6 +17,7 @@ import {
   LoginOutlined,
   MenuOutlined,
   MoonOutlined,
+  NotificationOutlined,
   ShopOutlined,
   ShoppingCartOutlined,
   ShoppingOutlined,
@@ -25,7 +26,8 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { notificationApi } from '../api/notifications';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
@@ -40,8 +42,29 @@ export default function UserLayout() {
   const { itemCount } = useCart();
   const { mode, toggle } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
   const screens = useBreakpoint();
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Số thông báo chưa đọc cho badge chuông. Endpoint count rất nhẹ nên gọi lại
+  // mỗi lần đổi trang — đọc xong ở /notifications là badge cập nhật ngay.
+  const [unreadNoti, setUnreadNoti] = useState(0);
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setUnreadNoti(0);
+      return;
+    }
+    let ignore = false;
+    notificationApi
+      .unreadCount()
+      .then((res) => {
+        if (!ignore) setUnreadNoti(res.data.count ?? 0);
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, [isAuthenticated, location.pathname]);
 
   const isMobile = !screens.md;
 
@@ -55,6 +78,7 @@ export default function UserLayout() {
     ? [
         { key: 'profile', label: <Link to="/account/profile">Tài khoản của tôi</Link> },
         { key: 'orders', label: <Link to="/orders">Đơn hàng của tôi</Link> },
+        { key: 'notifications', label: <Link to="/notifications">Thông báo</Link> },
         { key: 'addresses', label: <Link to="/account/addresses">Sổ địa chỉ</Link> },
         { key: 'alerts', label: <Link to="/price-alerts">Theo dõi giá</Link> },
         ...(isAdmin ? [{ key: 'admin', label: <Link to="/admin">Trang quản trị</Link> }] : []),
@@ -73,6 +97,7 @@ export default function UserLayout() {
     { key: 'products', icon: <ShopOutlined />, label: <Link to="/products" onClick={closeDrawer}>Sản phẩm</Link> },
     ...(isAuthenticated
       ? [
+          { key: 'notifications', icon: <NotificationOutlined />, label: <Link to="/notifications" onClick={closeDrawer}>Thông báo</Link> },
           { key: 'alerts', icon: <BellOutlined />, label: <Link to="/price-alerts" onClick={closeDrawer}>Theo dõi giá</Link> },
           { key: 'profile', icon: <UserOutlined />, label: <Link to="/account/profile" onClick={closeDrawer}>Tài khoản</Link> },
           { key: 'orders', icon: <ShoppingCartOutlined />, label: <Link to="/orders" onClick={closeDrawer}>Đơn hàng</Link> },
@@ -157,8 +182,16 @@ export default function UserLayout() {
             </Tooltip>
 
             {!isMobile && isAuthenticated && (
-              <Link to="/price-alerts" className="uheader__link uheader__link--icon" aria-label="Theo dõi giá">
-                <BellOutlined />
+              <Link
+                to="/notifications"
+                className="uheader__link uheader__link--icon"
+                aria-label={
+                  unreadNoti > 0 ? `Thông báo, ${unreadNoti} chưa đọc` : 'Thông báo'
+                }
+              >
+                <Badge count={unreadNoti} size="small" overflowCount={99}>
+                  <BellOutlined style={{ fontSize: 20, color: 'var(--color-on-navy)' }} />
+                </Badge>
               </Link>
             )}
 

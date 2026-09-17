@@ -1,0 +1,113 @@
+/* =============================================================================
+   TRANG THÔNG BÁO
+============================================================================= */
+
+.notis {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Mỗi thông báo là <button> thật: bấm được bằng bàn phím, trình đọc màn hình
+   hiểu đúng. Chưa đọc = nền tint cam + chấm cam cạnh tiêu đề. */
+.noti {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color var(--dur-base) var(--ease-in-out),
+              box-shadow var(--dur-base) var(--ease-out),
+              transform var(--dur-base) var(--ease-out);
+}
+.noti:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--color-accent-border);
+  box-shadow: var(--shadow-md);
+}
+.noti:disabled {
+  cursor: default;
+}
+.noti[data-unread='true'] {
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-soft);
+}
+
+.noti__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: var(--text-lg);
+}
+/* Tông màu icon theo loại thông báo — dùng cặp soft/text đã kiểm tương phản */
+.noti__icon[data-type='order_update'] {
+  background: var(--color-info-soft);
+  color: var(--color-info-text);
+}
+.noti__icon[data-type='price_alert'] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+}
+.noti__icon[data-type='deal'] {
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
+}
+.noti__icon[data-type='recommendation'] {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
+}
+.noti__icon[data-type='system'] {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-muted);
+}
+/* Trên nền tint cam của thông báo chưa đọc, icon cần nền đặc để không hoà lẫn */
+.noti[data-unread='true'] .noti__icon {
+  background: var(--color-surface);
+}
+
+.noti__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.noti__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.noti__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+.noti__text {
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+.noti__time {
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+
+.notis__pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-6);
+}

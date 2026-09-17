@@ -297,6 +297,45 @@
   translate: 3px 0;
 }
 
+/* ---- Nút "Xem thêm" dưới lưới sản phẩm ----
+   Dạng viên thuốc viền cam, đặt giữa: đủ nổi để thấy còn hàng phía sau,
+   nhưng không tranh chấp với CTA chính của trang. */
+.hsection__more {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-6);
+}
+.hsection__more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding-inline: var(--space-8);
+  border: 1px solid var(--color-accent-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-accent-text);
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-in-out),
+              border-color var(--dur-fast) var(--ease-in-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+.hsection__more-btn:hover {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+.hsection__more-btn .anticon {
+  font-size: var(--text-sm);
+  transition: translate var(--dur-fast) var(--ease-out);
+}
+.hsection__more-btn:hover .anticon {
+  translate: 0 2px;
+}
+
 /* ===========================================================================
    DANH MỤC — hàng cuộn ngang
    ========================================================================= */
@@ -431,20 +470,25 @@
 
 /* ===========================================================================
    THƯƠNG HIỆU
+   Thẻ hai tầng: chữ cái đầu phóng to làm hoạ tiết nền + huy hiệu gradient,
+   kèm dòng gợi ý hành động — thay cho ô "chấm + tên" đơn điệu trước đây.
    ========================================================================= */
 .brands {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: var(--space-4);
 }
 .brand {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
+  gap: var(--space-4);
+  padding: var(--space-5);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
+  overflow: hidden;
+  isolation: isolate;
   transition: transform var(--dur-base) var(--ease-out),
               border-color var(--dur-base) var(--ease-in-out),
               box-shadow var(--dur-base) var(--ease-out);
@@ -454,26 +498,82 @@
   border-color: var(--color-accent);
   box-shadow: var(--shadow-md);
 }
+/* Chữ cái khổng lồ mờ ở góc phải — tạo chiều sâu mà không thêm màu mới */
+.brand__mark {
+  position: absolute;
+  right: -10px;
+  bottom: -30px;
+  z-index: -1;
+  font-family: var(--font-display);
+  font-size: 96px;
+  font-weight: var(--weight-extrabold);
+  line-height: 1;
+  color: var(--color-accent-soft);
+  user-select: none;
+  transition: color var(--dur-base) var(--ease-in-out),
+              transform var(--dur-base) var(--ease-out);
+}
+.brand:hover .brand__mark {
+  color: var(--color-accent-border);
+  transform: translateY(-4px) rotate(-4deg);
+}
 .brand__badge {
   flex: none;
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: var(--radius-md);
-  /* Cùng lý do như nút CTA: chữ trắng cần nền từ brand-700 trở xuống */
-  background: linear-gradient(135deg, var(--brand-700), var(--brand-900));
   color: var(--ink-0);
   font-family: var(--font-display);
-  font-size: var(--text-lg);
+  font-size: var(--text-xl);
   font-weight: var(--weight-extrabold);
+  box-shadow: var(--shadow-sm);
+}
+/* Ba tông xoay vòng cùng họ navy/cam của thương hiệu — lưới đỡ đều màu
+   nhưng không lạc khỏi bảng màu. Chữ trắng trên cả ba nền đều đạt ≥ 4.5:1. */
+.brand__badge[data-tone='0'] {
+  background: linear-gradient(135deg, var(--brand-700), var(--brand-900));
+}
+.brand__badge[data-tone='1'] {
+  background: linear-gradient(135deg, var(--ink-800), var(--ink-925));
+}
+.brand__badge[data-tone='2'] {
+  background: linear-gradient(135deg, var(--brand-900), var(--ink-900));
+}
+.brand__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 .brand__name {
-  font-weight: var(--weight-semibold);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
   color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.brand__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  transition: color var(--dur-fast) var(--ease-in-out);
+}
+.brand__hint .anticon {
+  font-size: var(--text-xs);
+  transition: translate var(--dur-fast) var(--ease-out);
+}
+.brand:hover .brand__hint {
+  color: var(--color-accent-text);
+}
+.brand:hover .brand__hint .anticon {
+  translate: 3px 0;
 }
 
 /* ===========================================================================

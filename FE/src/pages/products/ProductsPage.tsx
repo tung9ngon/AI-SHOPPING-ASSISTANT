@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   App,
+  Breadcrumb,
   Button,
   Col,
   Drawer,
@@ -13,8 +14,14 @@ import {
   Select,
   Skeleton,
 } from 'antd';
-import { ClearOutlined, CloseOutlined, FilterOutlined } from '@ant-design/icons';
-import { useSearchParams } from 'react-router-dom';
+import {
+  ArrowLeftOutlined,
+  ClearOutlined,
+  CloseOutlined,
+  FilterOutlined,
+  HomeOutlined,
+} from '@ant-design/icons';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { categoryApi } from '../../api/categories';
 import { productApi, type ProductListItem, type ProductQuery } from '../../api/products';
 import { getErrorMessage } from '../../api/client';
@@ -41,6 +48,14 @@ export default function ProductsPage() {
   const { message } = App.useApp();
   const screens = useBreakpoint();
   const isNarrow = !screens.lg;
+  const navigate = useNavigate();
+
+  // Quay lại trang trước nếu người dùng đến từ trong site (react-router đánh
+  // idx > 0 vào history.state); vào thẳng bằng link ngoài thì về trang chủ.
+  const goBack = () => {
+    if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
+    else navigate('/');
+  };
 
   // URL là "nguồn sự thật" của bộ lọc -> chia sẻ link giữ nguyên bộ lọc,
   // và ô tìm kiếm trên header (điều hướng /products?search=...) hoạt động ngay.
@@ -243,8 +258,41 @@ export default function ProductsPage() {
     </div>
   );
 
+  const currentCategory = query.categoryId
+    ? categories.find((c) => c.id === query.categoryId)
+    : null;
+
   return (
-    <div className="plist">
+    <div>
+      {/* Nút quay lại + breadcrumb: trước đây muốn thoát trang này chỉ còn
+          cách bấm logo trên header — bổ sung đường lui rõ ràng. */}
+      <div className="pback">
+        <button
+          type="button"
+          className="pback__btn"
+          onClick={goBack}
+          aria-label="Quay lại trang trước"
+        >
+          <ArrowLeftOutlined aria-hidden="true" />
+        </button>
+        <Breadcrumb
+          items={[
+            {
+              title: (
+                <Link to="/">
+                  <HomeOutlined /> Trang chủ
+                </Link>
+              ),
+            },
+            currentCategory
+              ? { title: <Link to="/products">Sản phẩm</Link> }
+              : { title: 'Sản phẩm' },
+            ...(currentCategory ? [{ title: currentCategory.name }] : []),
+          ]}
+        />
+      </div>
+
+      <div className="plist">
       {filterPanel}
 
       <div>
@@ -339,6 +387,8 @@ export default function ProductsPage() {
             )}
           </>
         )}
+      </div>
+
       </div>
 
       <Drawer

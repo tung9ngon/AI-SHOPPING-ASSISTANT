@@ -21,7 +21,7 @@
 
 .ocard {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--space-4);
   padding: var(--space-4) var(--space-5);
@@ -31,6 +31,39 @@
   transition: border-color var(--dur-base) var(--ease-in-out),
               box-shadow var(--dur-base) var(--ease-out),
               transform var(--dur-base) var(--ease-out);
+}
+
+/* Ảnh sản phẩm đầu tiên của đơn — mốc thị giác để nhận ra đơn nhanh hơn chữ */
+.ocard__thumb {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+  overflow: hidden;
+  color: var(--ink-400);
+  font-size: 22px;
+}
+.ocard__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ocard__main {
+  min-width: 0;
+}
+.ocard__name {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 .ocard:hover {
   transform: translateY(-2px);
@@ -50,12 +83,9 @@
   gap: var(--space-3);
 }
 .ocard__code {
-  font-family: var(--font-display);
-  font-size: var(--text-md);
-  font-weight: var(--weight-bold);
-  color: var(--color-text);
-  /* Mã đơn là chuỗi hex — chữ số đều bề ngang cho dễ đối chiếu */
+  /* Mã đơn là chuỗi hex — chữ số đều bề ngang cho dễ đối chiếu với hỗ trợ */
   font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-semibold);
 }
 .ocard__meta {
   margin-top: var(--space-2);
@@ -93,14 +123,18 @@
 }
 
 @media (max-width: 575px) {
-  /* Một cột: để nguyên 2 cột thì cột tiền chiếm chỗ khiến dòng "2 sản phẩm"
-     bị bẻ làm đôi. Xếp tiền xuống dưới, căn phải. */
+  /* Màn hẹp: ảnh + nội dung một hàng, tiền xuống hàng dưới căn phải. */
   .ocard {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr);
     gap: var(--space-3);
     padding: var(--space-4);
   }
+  .ocard__thumb {
+    width: 48px;
+    height: 48px;
+  }
   .ocard__total {
+    grid-column: 1 / -1;
     text-align: end;
     padding-top: var(--space-3);
     border-top: 1px solid var(--color-border);

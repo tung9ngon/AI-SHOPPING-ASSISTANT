@@ -21,6 +21,7 @@ import { PaymentModule } from './users/payment/payment.module';
 import { AdminPaymentModule } from './admin/payment/payment.admin.module';
 import { ChatModule } from './users/chat/chat.module';
 import { AddressModule } from './users/address/address.module'
+import { NotificationModule } from './users/notification/notification.module';
 import { ProfileModule } from './users/profile/profile.module';
 import { AdminStatisticsModule } from './admin/statistics/statistics.admin.module';
 import { ProfileAdminModule } from './admin/profile/profile.admin.module';
@@ -70,6 +71,7 @@ import { ProfileAdminModule } from './admin/profile/profile.admin.module';
     AdminProductModule,
     ChatModule,
     AddressModule,
+    NotificationModule,
     ProfileModule,
     AdminStatisticsModule,
     ProfileAdminModule,
