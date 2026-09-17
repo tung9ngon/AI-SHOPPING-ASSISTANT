@@ -5,6 +5,15 @@ import { Order } from '../../database/order.entity';
 import { OrderItem } from '../../database/order-item.entity';
 import { QueryAdminOrderDto, UpdateOrderStatusDto } from './order.admin.dto';
 import { PaymentCoreService } from '../../users/payment/payment-core.service';
+import { NotificationService } from '../../users/notification/notification.service';
+
+// Tiêu đề thông báo in-app cho chủ đơn khi admin đổi trạng thái
+const STATUS_NOTI_TITLE: Partial<Record<Order['status'], string>> = {
+  paid: 'Đơn hàng đã được xác nhận thanh toán',
+  shipped: 'Đơn hàng đang được giao đến bạn',
+  cancelled: 'Đơn hàng đã bị huỷ',
+  pending: 'Đơn hàng chuyển về trạng thái chờ xử lý',
+};
 
 @Injectable()
 export class AdminOrderService {
@@ -13,6 +22,7 @@ export class AdminOrderService {
     private readonly orderRepo: Repository<Order>,
     private readonly dataSource: DataSource,
     private readonly paymentCore: PaymentCoreService,
+    private readonly notifications: NotificationService,
   ) {}
 
   // GET /api/admin/orders
@@ -132,6 +142,17 @@ export class AdminOrderService {
       }
 
       await queryRunner.commitTransaction();
+
+      // Báo cho chủ đơn sau khi commit (push tự nuốt lỗi, không ảnh hưởng response)
+      const title = STATUS_NOTI_TITLE[dto.status];
+      if (title) {
+        await this.notifications.push(order.user_id, {
+          type: 'order_update',
+          title,
+          body: `Đơn #${order.id.slice(0, 8).toUpperCase()} vừa được cập nhật trạng thái.`,
+          data: { order_id: order.id },
+        });
+      }
 
       return {
         id: saved.id,

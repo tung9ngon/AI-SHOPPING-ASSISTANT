@@ -7,6 +7,7 @@ import { CartItem } from '../../database/cart-item.entity';
 import { DiscountCode } from '../../database/discount-code.entity';
 import { ProductImage } from '../../database/product-image.entity';
 import { Address } from '../../database/address.entity';
+import { NotificationModule } from '../notification/notification.module';
 import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
 
@@ -21,6 +22,7 @@ import { OrderController } from './order.controller';
       ProductImage,
       Address,
     ]),
+    NotificationModule,
   ],
   controllers: [OrderController],
   providers: [OrderService],

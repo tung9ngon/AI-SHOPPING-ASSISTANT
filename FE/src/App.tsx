@@ -22,6 +22,7 @@ const ProfilePage = lazy(() => import('./pages/account/ProfilePage'));
 const OrdersPage = lazy(() => import('./pages/orders/OrdersPage'));
 const OrderDetailPage = lazy(() => import('./pages/orders/OrderDetailPage'));
 const PriceAlertsPage = lazy(() => import('./pages/pricealerts/PriceAlertsPage'));
+const NotificationsPage = lazy(() => import('./pages/notifications/NotificationsPage'));
 
 // Khung khu tài khoản: thanh điều hướng dùng chung cho hồ sơ / đơn hàng /
 // sổ địa chỉ / theo dõi giá.
@@ -84,6 +85,7 @@ export default function App() {
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/orders/:id" element={<OrderDetailPage />} />
             <Route path="/price-alerts" element={<PriceAlertsPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/account/profile" element={<ProfilePage />} />
             <Route path="/account/addresses" element={<AddressBookPage />} />
           </Route>

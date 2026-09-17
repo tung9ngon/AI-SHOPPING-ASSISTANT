@@ -150,6 +150,65 @@
 .psection {
   margin-bottom: var(--space-12);
 }
+
+/* ---- Sản phẩm tương tự: dải cuộn ngang ---- */
+.prelated__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+.prelated__nav {
+  display: flex;
+  gap: var(--space-2);
+}
+.prelated__arrow {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-in-out),
+              color var(--dur-fast) var(--ease-in-out),
+              background-color var(--dur-fast) var(--ease-in-out);
+}
+.prelated__arrow:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+  background: var(--color-accent-soft);
+}
+.prelated__track {
+  display: flex;
+  gap: var(--space-4);
+  overflow-x: auto;
+  /* Chừa chỗ cho bóng đổ của thẻ, không bị cắt bởi overflow */
+  padding: var(--space-1) var(--space-1) var(--space-4);
+  scrollbar-width: none;
+  /* Kéo trượt dừng gọn vào từng thẻ thay vì trôi lưng chừng */
+  scroll-snap-type: x proximity;
+  /* Mờ dần mép phải: tín hiệu còn nội dung phía sau (cùng kiểu dải danh mục) */
+  mask-image: linear-gradient(90deg, #000 0 94%, transparent 100%);
+}
+.prelated__track::-webkit-scrollbar {
+  display: none;
+}
+.prelated__item {
+  flex: none;
+  width: 232px;
+  scroll-snap-align: start;
+}
+
+@media (max-width: 575px) {
+  .prelated__item {
+    width: 168px;
+  }
+}
 .pdesc {
   max-width: 72ch;
   white-space: pre-wrap;

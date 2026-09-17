@@ -117,25 +117,44 @@ export default function OrdersPage() {
       ) : (
         <>
           <div className="orders__list">
-            {items.map((o) => (
-              <Link className="ocard" to={`/orders/${o.id}`} key={o.id}>
-                <div>
-                  <div className="ocard__id">
-                    <span className="ocard__code">#{o.id.slice(0, 8).toUpperCase()}</span>
-                    <Tag color={ORDER_STATUS_COLOR[o.status]} style={{ marginInlineEnd: 0 }}>
-                      {ORDER_STATUS_LABEL[o.status] ?? o.status}
-                    </Tag>
-                  </div>
-                  <div className="ocard__meta">
-                    {formatDate(o.created_at)} · {o.item_count} sản phẩm
-                  </div>
-                </div>
+            {items.map((o) => {
+              // Gọi đơn theo tên sản phẩm thay vì mã ngẫu nhiên — nhìn phát
+              // biết ngay đơn này mua gì; mã đơn lui xuống dòng meta.
+              const name = o.first_product_name
+                ? o.item_count > 1
+                  ? `${o.first_product_name} và ${o.item_count - 1} sản phẩm khác`
+                  : o.first_product_name
+                : `#${o.id.slice(0, 8).toUpperCase()}`;
+              return (
+                <Link className="ocard" to={`/orders/${o.id}`} key={o.id}>
+                  <span className="ocard__thumb" aria-hidden="true">
+                    {o.first_product_image ? (
+                      <img src={o.first_product_image} alt="" loading="lazy" />
+                    ) : (
+                      <ShoppingOutlined />
+                    )}
+                  </span>
 
-                <div className="ocard__total tabular">{formatVND(o.total)}</div>
+                  <div className="ocard__main">
+                    <div className="ocard__id">
+                      <span className="ocard__name">Đơn hàng: {name}</span>
+                      <Tag color={ORDER_STATUS_COLOR[o.status]} style={{ marginInlineEnd: 0 }}>
+                        {ORDER_STATUS_LABEL[o.status] ?? o.status}
+                      </Tag>
+                    </div>
+                    <div className="ocard__meta">
+                      <span className="ocard__code">#{o.id.slice(0, 8).toUpperCase()}</span>
+                      {' · '}
+                      {formatDate(o.created_at)} · {o.item_count} sản phẩm
+                    </div>
+                  </div>
 
-                <RightOutlined className="ocard__chev" aria-hidden="true" />
-              </Link>
-            ))}
+                  <div className="ocard__total tabular">{formatVND(o.total)}</div>
+
+                  <RightOutlined className="ocard__chev" aria-hidden="true" />
+                </Link>
+              );
+            })}
           </div>
 
           {total > PAGE_SIZE && (

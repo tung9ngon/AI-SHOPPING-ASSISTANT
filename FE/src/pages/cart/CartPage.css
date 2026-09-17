@@ -26,12 +26,19 @@
   overflow: hidden;
 }
 
+/* Hàng "Chọn tất cả" trên đầu danh sách */
+.cart__selectall {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-sunken);
+}
+
 /* ---- Một dòng sản phẩm ----
    Dùng grid đặt tên vùng để bản mobile xếp lại thứ tự mà không phải đổi DOM. */
 .citem {
   display: grid;
-  grid-template-columns: 88px minmax(0, 1fr) auto auto auto;
-  grid-template-areas: 'img name qty total del';
+  grid-template-columns: auto 88px minmax(0, 1fr) auto auto auto;
+  grid-template-areas: 'check img name qty total del';
   align-items: center;
   gap: var(--space-4);
   padding: var(--space-4);
@@ -39,6 +46,11 @@
 }
 .citem + .citem {
   border-top: 1px solid var(--color-border);
+}
+.citem__check {
+  grid-area: check;
+  display: grid;
+  place-items: center;
 }
 .citem[data-busy='true'] {
   opacity: 0.55;
@@ -155,13 +167,13 @@
 }
 
 @media (max-width: 575px) {
-  /* Trên màn hẹp, 5 cột ngang sẽ bóp tên sản phẩm còn vài ký tự.
-     Xếp lại thành 2 cột: ảnh bên trái, phần còn lại xuống dòng. */
+  /* Trên màn hẹp, 6 cột ngang sẽ bóp tên sản phẩm còn vài ký tự.
+     Xếp lại: checkbox + ảnh bên trái, phần còn lại xuống dòng. */
   .citem {
-    grid-template-columns: 72px minmax(0, 1fr) auto;
+    grid-template-columns: auto 72px minmax(0, 1fr) auto;
     grid-template-areas:
-      'img name  del'
-      'img qty   total';
+      'check img name  del'
+      'check img qty   total';
     row-gap: var(--space-3);
   }
   .citem__img {

@@ -26,6 +26,21 @@ export function formatDateShort(value: string | Date | null | undefined): string
   }
 }
 
+// Thời gian tương đối kiểu "5 phút trước" — quá 7 ngày thì trả về ngày cụ thể
+export function formatTimeAgo(value: string | Date | null | undefined): string {
+  if (!value) return '—';
+  const t = new Date(value).getTime();
+  if (Number.isNaN(t)) return '—';
+  const minutes = Math.floor((Date.now() - t) / 60_000);
+  if (minutes < 1) return 'Vừa xong';
+  if (minutes < 60) return `${minutes} phút trước`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} giờ trước`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} ngày trước`;
+  return formatDateShort(value);
+}
+
 // Nhãn tiếng Việt cho trạng thái đơn hàng
 export const ORDER_STATUS_LABEL: Record<string, string> = {
   simulated_success: 'Hoàn tất (mô phỏng)',

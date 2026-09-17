@@ -8,6 +8,9 @@ export interface OrderListItem {
   status: OrderStatus;
   created_at: string;
   item_count: number;
+  // Tên + ảnh sản phẩm đầu tiên — hiển thị "Đơn hàng: <tên>" thay cho mã đơn
+  first_product_name: string | null;
+  first_product_image: string | null;
 }
 
 // Item sản phẩm trong chi tiết đơn
@@ -43,8 +46,10 @@ export interface OrderDetail {
 
 export const orderApi = {
   // address_id: id địa chỉ đã chọn từ sổ địa chỉ; BE snapshot thông tin vào đơn.
+  // item_ids: các cart_item được tick chọn ở giỏ — không gửi thì đặt cả giỏ.
   create: (data: {
     address_id?: string;
+    item_ids?: string[];
     discount_code?: string; // mã giảm tiền hàng
     freeship_code?: string; // mã miễn phí vận chuyển
     note?: string;

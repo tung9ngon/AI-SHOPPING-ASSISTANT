@@ -1,17 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   App,
   Breadcrumb,
   Button,
   Card,
-  Col,
   Descriptions,
   Empty,
   InputNumber,
   Modal,
   Rate,
   Result,
-  Row,
   Select,
   Skeleton,
   Space,
@@ -23,7 +21,9 @@ import {
   BellOutlined,
   CustomerServiceOutlined,
   HomeOutlined,
+  LeftOutlined,
   PictureOutlined,
+  RightOutlined,
   SafetyCertificateOutlined,
   ShoppingCartOutlined,
   SyncOutlined,
@@ -81,6 +81,13 @@ export default function ProductDetailPage() {
   const [qty, setQty] = useState(1);
   const [adding, setAdding] = useState(false);
 
+  // Dải "Sản phẩm tương tự" cuộn ngang; hai nút mũi tên đẩy ~80% bề rộng khung
+  const relatedTrackRef = useRef<HTMLDivElement>(null);
+  const scrollRelated = (dir: -1 | 1) => {
+    const el = relatedTrackRef.current;
+    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: 'smooth' });
+  };
+
   // Modal theo dõi giá
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertPrice, setAlertPrice] = useState<number | null>(null);
@@ -108,13 +115,14 @@ export default function ProductDetailPage() {
         if (ignore) return;
         setProduct(res.data);
         setAlertPrice(Number(res.data.price));
-        // Sản phẩm cùng danh mục (loại trừ chính nó)
+        // Sản phẩm cùng danh mục (loại trừ chính nó) — lấy nhiều hơn 4 vì danh
+        // sách giờ cuộn ngang được, không còn bị bó trong một hàng lưới.
         if (res.data.category_id) {
           productApi
-            .list({ categoryId: res.data.category_id, limit: 5 })
+            .list({ categoryId: res.data.category_id, limit: 12 })
             .then((r) => {
               if (ignore) return;
-              setRelated((r.data.items ?? []).filter((p) => p.id !== id).slice(0, 4));
+              setRelated((r.data.items ?? []).filter((p) => p.id !== id).slice(0, 10));
             })
             .catch(() => {});
         }
@@ -406,19 +414,43 @@ export default function ProductDetailPage() {
         />
       </Card>
 
-      {/* ===== Sản phẩm tương tự ===== */}
+      {/* ===== Sản phẩm tương tự — dải cuộn ngang =====
+          Kéo/vuốt được trên mọi thiết bị; desktop có thêm hai nút mũi tên vì
+          kéo ngang bằng chuột không tự nhiên. */}
       {related.length > 0 && (
-        <section className="psection" aria-labelledby="sec-related">
-          <h2 id="sec-related" className="section-title" style={{ marginBottom: 20 }}>
-            Sản phẩm tương tự
-          </h2>
-          <Row gutter={[16, 16]}>
+        <section className="psection prelated" aria-labelledby="sec-related">
+          <div className="prelated__head">
+            <h2 id="sec-related" className="section-title">
+              Sản phẩm tương tự
+            </h2>
+            {related.length > 3 && (
+              <div className="prelated__nav">
+                <button
+                  type="button"
+                  className="prelated__arrow"
+                  aria-label="Cuộn danh sách về trước"
+                  onClick={() => scrollRelated(-1)}
+                >
+                  <LeftOutlined aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="prelated__arrow"
+                  aria-label="Cuộn danh sách tiếp"
+                  onClick={() => scrollRelated(1)}
+                >
+                  <RightOutlined aria-hidden="true" />
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="prelated__track" ref={relatedTrackRef} tabIndex={-1}>
             {related.map((p) => (
-              <Col key={p.id} xs={12} sm={12} md={8} lg={6}>
+              <div className="prelated__item" key={p.id}>
                 <ProductCard product={p} />
-              </Col>
+              </div>
             ))}
-          </Row>
+          </div>
         </section>
       )}
 

@@ -1,11 +1,63 @@
-import { useEffect, useState } from 'react';
-import { App, Checkbox, Form, Input, Modal } from 'antd';
+import { useEffect, useRef, useState } from 'react';
+import { App, AutoComplete, Checkbox, Form, Input, Modal, Select } from 'antd';
+import { EnvironmentOutlined } from '@ant-design/icons';
 import { addressApi } from '../../api/addresses';
+import {
+  GOONG_KEY,
+  locationApi,
+  type District,
+  type GoongPrediction,
+  type Province,
+} from '../../api/location';
 import { getErrorMessage } from '../../api/client';
 import { phoneRule } from '../../utils/validators';
 import type { Address } from '../../types';
 
+interface FormValues {
+  recipient_name: string;
+  phone_number: string;
+  province: string;
+  district: string;
+  street: string;
+  is_default?: boolean;
+}
+
+// Ghép địa chỉ đầy đủ; nếu phần nhập tay/chọn từ gợi ý Goong ĐÃ chứa sẵn
+// quận/tỉnh thì không nối lặp lại nữa.
+function composeAddress(street: string, district: string, province: string): string {
+  const s = street.trim().replace(/[,\s]+$/, '');
+  const parts = [s];
+  if (district && !s.toLowerCase().includes(district.toLowerCase())) parts.push(district);
+  if (province && !s.toLowerCase().includes(province.toLowerCase())) parts.push(province);
+  return parts.join(', ');
+}
+
+// Tách ngược full_address cũ (khi sửa): "street, district, province".
+// Chỉ nhận khi 2 phần cuối khớp đúng tên trong danh sách; không khớp thì trả
+// nguyên chuỗi vào ô địa chỉ để người dùng tự chọn lại tỉnh/quận.
+function parseAddress(full: string, provinces: Province[]) {
+  const parts = full.split(',').map((p) => p.trim()).filter(Boolean);
+  if (parts.length >= 3) {
+    const provinceName = parts[parts.length - 1];
+    const districtName = parts[parts.length - 2];
+    const province = provinces.find(
+      (p) => p.name.toLowerCase() === provinceName.toLowerCase(),
+    );
+    if (province) {
+      return {
+        street: parts.slice(0, -2).join(', '),
+        district: districtName,
+        province: province.name,
+        provinceCode: province.code,
+      };
+    }
+  }
+  return { street: full, district: '', province: '', provinceCode: null };
+}
+
 // Modal thêm/sửa địa chỉ. `editing` = null -> thêm mới; có giá trị -> sửa.
+// Địa chỉ chọn theo tầng: Tỉnh/Thành -> Quận/Huyện -> địa chỉ cụ thể (có gợi ý
+// từ Goong.io khi cấu hình VITE_GOONG_API_KEY).
 export default function AddressFormModal({
   open,
   editing,
@@ -18,31 +70,89 @@ export default function AddressFormModal({
   onSaved: (saved: Address) => void;
 }) {
   const { message } = App.useApp();
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<FormValues>();
   const [saving, setSaving] = useState(false);
 
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [districtsLoading, setDistrictsLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState<GoongPrediction[]>([]);
+  const suggestTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  const loadDistricts = (provinceCode: number) => {
+    setDistrictsLoading(true);
+    locationApi
+      .districts(provinceCode)
+      .then(setDistricts)
+      .catch(() => setDistricts([]))
+      .finally(() => setDistrictsLoading(false));
+  };
+
   useEffect(() => {
-    if (open) {
-      if (editing) {
-        form.setFieldsValue({
-          recipient_name: editing.recipient_name ?? '',
-          phone_number: editing.phone_number ?? '',
-          full_address: editing.full_address,
-          is_default: editing.is_default,
-        });
-      } else {
-        form.resetFields();
-      }
-    }
+    if (!open) return;
+    setSuggestions([]);
+    setDistricts([]);
+    form.resetFields();
+
+    locationApi
+      .provinces()
+      .then((list) => {
+        setProvinces(list);
+        if (editing) {
+          const parsed = parseAddress(editing.full_address, list);
+          form.setFieldsValue({
+            recipient_name: editing.recipient_name ?? '',
+            phone_number: editing.phone_number ?? '',
+            province: parsed.province,
+            district: parsed.district,
+            street: parsed.street,
+            is_default: editing.is_default,
+          });
+          if (parsed.provinceCode != null) loadDistricts(parsed.provinceCode);
+        }
+      })
+      .catch(() => {
+        setProvinces([]);
+        // Không tải được danh sách tỉnh (mất mạng...) — vẫn cho sửa phần khác
+        if (editing) {
+          form.setFieldsValue({
+            recipient_name: editing.recipient_name ?? '',
+            phone_number: editing.phone_number ?? '',
+            street: editing.full_address,
+            is_default: editing.is_default,
+          });
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editing, form]);
 
+  const onProvinceChange = (name: string) => {
+    // Đổi tỉnh thì quận cũ không còn hợp lệ
+    form.setFieldValue('district', undefined);
+    setDistricts([]);
+    const province = provinces.find((p) => p.name === name);
+    if (province) loadDistricts(province.code);
+  };
+
+  // Gợi ý Goong: debounce 350ms, kèm ngữ cảnh quận/tỉnh đã chọn để kết quả sát hơn
+  const onStreetSearch = (text: string) => {
+    if (!GOONG_KEY) return;
+    clearTimeout(suggestTimer.current);
+    if (text.trim().length < 3) {
+      setSuggestions([]);
+      return;
+    }
+    suggestTimer.current = setTimeout(() => {
+      const { district, province } = form.getFieldsValue(['district', 'province']);
+      const context = [district, province].filter(Boolean).join(', ');
+      locationApi
+        .suggest(context ? `${text}, ${context}` : text)
+        .then(setSuggestions);
+    }, 350);
+  };
+
   const submit = async () => {
-    let values: {
-      recipient_name: string;
-      phone_number: string;
-      full_address: string;
-      is_default?: boolean;
-    };
+    let values: FormValues;
     try {
       values = await form.validateFields();
     } catch {
@@ -53,7 +163,7 @@ export default function AddressFormModal({
       const payload = {
         recipient_name: values.recipient_name.trim(),
         phone_number: values.phone_number.trim(),
-        full_address: values.full_address.trim(),
+        full_address: composeAddress(values.street, values.district, values.province),
         is_default: values.is_default ?? false,
       };
       const res = editing
@@ -94,19 +204,60 @@ export default function AddressFormModal({
         >
           <Input placeholder="0912345678" />
         </Form.Item>
+
         <Form.Item
-          name="full_address"
-          label="Địa chỉ"
+          name="province"
+          label="Tỉnh / Thành phố"
+          rules={[{ required: true, message: 'Vui lòng chọn tỉnh/thành phố' }]}
+        >
+          <Select
+            showSearch
+            placeholder="Chọn tỉnh/thành phố"
+            optionFilterProp="label"
+            onChange={onProvinceChange}
+            options={provinces.map((p) => ({ value: p.name, label: p.name }))}
+            notFoundContent={provinces.length === 0 ? 'Không tải được danh sách' : undefined}
+          />
+        </Form.Item>
+
+        {/* Khoá tới khi chọn tỉnh — chọn theo đúng thứ tự tỉnh -> quận/huyện */}
+        <Form.Item
+          name="district"
+          label="Quận / Huyện"
+          rules={[{ required: true, message: 'Vui lòng chọn quận/huyện' }]}
+        >
+          <Select
+            showSearch
+            placeholder={districts.length === 0 ? 'Chọn tỉnh/thành phố trước' : 'Chọn quận/huyện'}
+            optionFilterProp="label"
+            disabled={districts.length === 0 && !districtsLoading}
+            loading={districtsLoading}
+            options={districts.map((d) => ({ value: d.name, label: d.name }))}
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="street"
+          label="Địa chỉ cụ thể"
+          extra={
+            GOONG_KEY ? (
+              <>
+                <EnvironmentOutlined /> Gợi ý địa chỉ bởi Goong.io
+              </>
+            ) : undefined
+          }
           rules={[
-            { required: true, message: 'Vui lòng nhập địa chỉ' },
+            { required: true, message: 'Vui lòng nhập địa chỉ cụ thể' },
             { max: 255, message: 'Địa chỉ tối đa 255 ký tự' },
           ]}
         >
-          <Input.TextArea
-            rows={2}
-            placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
+          <AutoComplete
+            options={suggestions.map((s) => ({ value: s.description, key: s.place_id }))}
+            onSearch={onStreetSearch}
+            placeholder="Số nhà, tên đường, phường/xã"
           />
         </Form.Item>
+
         <Form.Item name="is_default" valuePropName="checked">
           <Checkbox>Đặt làm địa chỉ mặc định</Checkbox>
         </Form.Item>

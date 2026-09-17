@@ -76,17 +76,49 @@
   min-width: 0;
   max-width: 520px;
 }
-/* Bo tròn hết cỡ cho cụm input + nút, tạo hình viên thuốc liền mạch */
-.uheader__search .ant-input-affix-wrapper,
-.uheader__search .ant-input {
+/* Bo tròn hết cỡ cho cụm input + nút, tạo hình viên thuốc liền mạch.
+   Scope theo .uheader để áp cho cả ô tìm kiếm desktop lẫn hàng mobile. */
+.uheader .ant-input-search .ant-input-affix-wrapper,
+.uheader .ant-input-search .ant-input {
   border-start-start-radius: var(--radius-full);
   border-end-start-radius: var(--radius-full);
   padding-inline-start: var(--space-5);
 }
-.uheader__search .ant-input-search-button {
+.uheader .ant-input-search .ant-input-search-button {
   border-start-end-radius: var(--radius-full) !important;
   border-end-end-radius: var(--radius-full) !important;
   padding-inline: var(--space-5);
+}
+
+/* Header luôn là navy tối ở CẢ HAI chế độ, nhưng token input của AntD đổi theo
+   theme: sang chế độ tối, input chuyển nền tối + chữ tối -> ô tìm kiếm chìm hẳn
+   vào header, nút tìm gần như tàng hình. Ghim diện mạo sáng cho riêng cụm này
+   bằng primitive (không dùng token semantic vì chúng đảo theo theme). */
+.uheader .ant-input-search .ant-input-affix-wrapper,
+.uheader .ant-input-search .ant-input {
+  background: var(--ink-0);
+  border-color: transparent;
+  color: var(--ink-900);
+}
+.uheader .ant-input-search .ant-input::placeholder {
+  color: var(--ink-500); /* 4.83:1 trên nền trắng */
+}
+.uheader .ant-input-search .ant-input-clear-icon {
+  color: var(--ink-500);
+}
+/* Addon bọc nút tìm mang nền surface của theme -> lộ mảng vuông sau góc bo
+   tròn của nút (chế độ sáng thấy "bậc thang" trắng, chế độ tối thấy ô đen). */
+.uheader .ant-input-search .ant-input-group-addon {
+  background: transparent;
+}
+.uheader .ant-input-search .ant-input-search-button {
+  background: var(--brand-700) !important; /* icon trắng đạt 5.18:1 */
+  border-color: var(--brand-700) !important;
+  color: var(--ink-0) !important;
+}
+.uheader .ant-input-search .ant-input-search-button:hover {
+  background: var(--brand-800) !important;
+  border-color: var(--brand-800) !important;
 }
 
 /* ---- Điều hướng & hành động ---- */

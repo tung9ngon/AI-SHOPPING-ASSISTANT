@@ -45,3 +45,17 @@
 [data-theme='dark'] .ant-dropdown-menu-item-danger {
   color: var(--color-danger-text) !important;
 }
+
+/* ---------------------------------------------------------------------------
+   3. Số trang đang chọn của Pagination
+   Theme đặt itemActiveBg = brand-700, nhưng AntD vẫn lấy colorPrimary (cũng là
+   brand-700 ở chế độ sáng) làm MÀU CHỮ của trang đang chọn -> chữ trùng màu nền,
+   số trang biến mất (chỉ thấy một ô cam). Pagination không có token riêng cho
+   màu chữ active nên phải override ở đây: chữ trắng trên brand-700 đạt 5.18:1.
+   --------------------------------------------------------------------------- */
+.ant-pagination .ant-pagination-item-active {
+  border-color: transparent;
+}
+.ant-pagination .ant-pagination-item-active a {
+  color: #fff !important;
+}

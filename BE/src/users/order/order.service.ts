@@ -12,6 +12,7 @@ import { CartItem } from '../../database/cart-item.entity';
 import { DiscountCode, DiscountType } from '../../database/discount-code.entity';
 import { ProductImage } from '../../database/product-image.entity';
 import { Address } from '../../database/address.entity';
+import { NotificationService } from '../notification/notification.service';
 import { CreateOrderDto, QueryOrderDto } from './order.dto';
 
 const SHIPPING_FEE = 30_000;
@@ -31,6 +32,7 @@ export class OrderService {
     private readonly addressRepo: Repository<Address>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly notifications: NotificationService,
   ) {}
 
   private async validateDiscountCode(
@@ -78,7 +80,10 @@ export class OrderService {
 
   // POST /api/orders - checkout từ giỏ hàng hiện tại
   async checkout(userId: string, dto: CreateOrderDto) {
-    return this.dataSource.transaction(async (manager) => {
+    // Thông tin cho thông báo in-app, gom trong transaction, bắn sau khi commit
+    let notiSummary = { itemCount: 0, firstName: null as string | null };
+
+    const result = await this.dataSource.transaction(async (manager) => {
       const cartRepo = manager.getRepository(Cart);
       const cartItemRepo = manager.getRepository(CartItem);
       const discountRepo = manager.getRepository(DiscountCode);
@@ -97,11 +102,24 @@ export class OrderService {
       const cart = await cartRepo.findOne({ where: { user_id: userId } });
       if (!cart) throw new BadRequestException('Giỏ hàng trống');
 
-      const cartItems = await cartItemRepo.find({
+      let cartItems = await cartItemRepo.find({
         where: { cart_id: cart.id },
         relations: { product: true },
       });
       if (!cartItems.length) throw new BadRequestException('Giỏ hàng trống');
+
+      // Chỉ đặt những sản phẩm được tick chọn ở trang giỏ hàng (nếu client gửi
+      // item_ids). Id lạ -> báo lỗi thay vì lặng lẽ bỏ qua, tránh đặt thiếu đơn.
+      if (dto.item_ids?.length) {
+        const wanted = new Set(dto.item_ids);
+        const picked = cartItems.filter((item) => wanted.has(item.id));
+        if (picked.length !== wanted.size) {
+          throw new BadRequestException(
+            'Có sản phẩm đã chọn không còn trong giỏ, vui lòng tải lại giỏ hàng',
+          );
+        }
+        cartItems = picked;
+      }
 
       for (const item of cartItems) {
         if (!item.product || !item.product.is_active) {
@@ -221,7 +239,13 @@ export class OrderService {
         await discountRepo.save(freeshipDiscount);
       }
 
-      await cartItemRepo.delete({ cart_id: cart.id });
+      // Chỉ xoá khỏi giỏ những sản phẩm đã đặt — phần chưa tick vẫn nằm lại giỏ.
+      await cartItemRepo.delete({ id: In(cartItems.map((item) => item.id)) });
+
+      notiSummary = {
+        itemCount: cartItems.length,
+        firstName: cartItems[0]?.product?.name ?? null,
+      };
 
       return {
         id: savedOrder.id,
@@ -239,6 +263,20 @@ export class OrderService {
         created_at: savedOrder.created_at,
       };
     });
+
+    // Sau khi transaction commit mới bắn thông báo (push tự nuốt lỗi).
+    const name = notiSummary.firstName ?? 'sản phẩm';
+    await this.notifications.push(userId, {
+      type: 'order_update',
+      title: 'Đặt hàng thành công',
+      body:
+        notiSummary.itemCount > 1
+          ? `Đơn hàng "${name}" và ${notiSummary.itemCount - 1} sản phẩm khác đang chờ xử lý.`
+          : `Đơn hàng "${name}" đang chờ xử lý.`,
+      data: { order_id: result.id },
+    });
+
+    return result;
   }
 
   // GET /api/orders — không đổi
@@ -255,28 +293,52 @@ export class OrderService {
       take: limit,
     });
 
+    // Lấy toàn bộ line item của trang đơn hiện tại (kèm tên sản phẩm) để:
+    //   1. đếm item_count như trước;
+    //   2. lấy tên + ảnh sản phẩm ĐẦU TIÊN — FE hiển thị "Đơn hàng: <tên SP>"
+    //      thay cho mã đơn ngẫu nhiên không nói lên đơn mua gì.
     const orderIds = items.map((o) => o.id);
-    const counts = orderIds.length
-      ? await this.orderItemRepo
-          .createQueryBuilder('item')
-          .select('item.order_id', 'order_id')
-          .addSelect('COUNT(*)', 'item_count')
-          .where('item.order_id IN (:...orderIds)', { orderIds })
-          .groupBy('item.order_id')
-          .getRawMany()
+    const lineItems = orderIds.length
+      ? await this.orderItemRepo.find({
+          where: { order_id: In(orderIds) },
+          relations: { product: true },
+        })
       : [];
-    const countMap = new Map(
-      counts.map((c) => [c.order_id, Number(c.item_count)]),
+    const byOrder = new Map<string, typeof lineItems>();
+    for (const item of lineItems) {
+      const list = byOrder.get(item.order_id) ?? [];
+      list.push(item);
+      byOrder.set(item.order_id, list);
+    }
+
+    const firstProductIds = [...byOrder.values()]
+      .map((list) => list[0]?.product_id)
+      .filter((id): id is string => !!id);
+    const primaryImages = firstProductIds.length
+      ? await this.imageRepo.find({
+          where: { product_id: In(firstProductIds), is_primary: true },
+        })
+      : [];
+    const imageMap = new Map(
+      primaryImages.map((img) => [img.product_id, img.image_url]),
     );
 
     return {
-      items: items.map((o) => ({
-        id: o.id,
-        total: o.total,
-        status: o.status,
-        created_at: o.created_at,
-        item_count: countMap.get(o.id) ?? 0,
-      })),
+      items: items.map((o) => {
+        const list = byOrder.get(o.id) ?? [];
+        const first = list[0];
+        return {
+          id: o.id,
+          total: o.total,
+          status: o.status,
+          created_at: o.created_at,
+          item_count: list.length,
+          first_product_name: first?.product?.name ?? null,
+          first_product_image: first
+            ? (imageMap.get(first.product_id) ?? null)
+            : null,
+        };
+      }),
       total,
       page,
       limit,

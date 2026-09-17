@@ -1,11 +1,29 @@
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, IsUUID, Min, MaxLength } from 'class-validator';
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+  MaxLength,
+} from 'class-validator';
 import { OrderStatus } from '../../database/order.entity';
 
 // POST /api/orders
 export class CreateOrderDto {
   @IsUUID('4', { message: 'address_id không hợp lệ' })
   address_id: string;
+
+  // Danh sách cart_item id được TICK CHỌN ở trang giỏ hàng. Không gửi -> đặt
+  // toàn bộ giỏ (giữ tương thích client cũ). Gửi mảng rỗng bị chặn từ DTO.
+  @IsOptional()
+  @IsArray()
+  @ArrayNotEmpty({ message: 'Chưa chọn sản phẩm nào để thanh toán' })
+  @IsUUID('4', { each: true, message: 'item_ids chứa id không hợp lệ' })
+  item_ids?: string[];
 
   @IsOptional()
   @IsString()

@@ -6,6 +6,7 @@ import { PriceAlert } from '../../database/price-alert.entity';
 import { Product } from '../../database/product.entity';
 import { ProductImage } from '../../database/product-image.entity';
 import { MailService } from '../../config/mail';
+import { NotificationService } from '../notification/notification.service';
 import { CreatePriceAlertDto } from './pricealert.dto';
 
 @Injectable()
@@ -20,6 +21,7 @@ export class PriceAlertService {
     @InjectRepository(ProductImage)
     private readonly imageRepo: Repository<ProductImage>,
     private readonly mail: MailService,
+    private readonly notifications: NotificationService,
   ) {}
 
   // GET /api/price-alerts
@@ -114,6 +116,14 @@ export class PriceAlertService {
         alert.status = 'triggered';
         alert.triggered_at = new Date();
         await this.alertRepo.save(alert);
+
+        // Thông báo in-app cho mọi kênh (email chỉ là kênh gửi thêm)
+        await this.notifications.push(alert.user_id, {
+          type: 'price_alert',
+          title: `"${alert.product.name}" đã giảm tới mức giá bạn chờ`,
+          body: `Giá hiện tại ${currentPrice.toLocaleString('vi-VN')}₫ (mục tiêu ${targetPrice.toLocaleString('vi-VN')}₫).`,
+          data: { product_id: alert.product_id },
+        });
 
         if (alert.notify_channel === 'email' && alert.user?.email) {
           try {

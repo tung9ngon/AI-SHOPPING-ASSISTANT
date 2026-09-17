@@ -3,6 +3,7 @@ import {
   BellOutlined,
   EnvironmentOutlined,
   LogoutOutlined,
+  NotificationOutlined,
   ProfileOutlined,
   UserOutlined,
 } from '@ant-design/icons';
@@ -13,6 +14,7 @@ import './AccountLayout.css';
 const NAV = [
   { to: '/account/profile', icon: <UserOutlined />, label: 'Thông tin tài khoản' },
   { to: '/orders', icon: <ProfileOutlined />, label: 'Đơn hàng của tôi' },
+  { to: '/notifications', icon: <NotificationOutlined />, label: 'Thông báo' },
   { to: '/account/addresses', icon: <EnvironmentOutlined />, label: 'Sổ địa chỉ' },
   { to: '/price-alerts', icon: <BellOutlined />, label: 'Theo dõi giá' },
 ];

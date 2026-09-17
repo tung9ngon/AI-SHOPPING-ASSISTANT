@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { App, Button, Empty, InputNumber, Popconfirm, Result, Skeleton } from 'antd';
+import { useEffect, useState } from 'react';
+import { App, Button, Checkbox, Empty, InputNumber, Popconfirm, Result, Skeleton } from 'antd';
 import {
   ArrowRightOutlined,
   DeleteOutlined,
@@ -22,6 +22,27 @@ export default function CartPage() {
 
   // id của cart_item đang được cập nhật/xoá -> khoá control dòng đó.
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  // Các cart_item được TICK CHỌN để thanh toán. null = chưa khởi tạo (giỏ chưa
+  // tải xong) — lần đầu có dữ liệu thì mặc định chọn tất cả; các lần refresh
+  // sau chỉ loại những id không còn trong giỏ, giữ nguyên lựa chọn của user.
+  const [selectedIds, setSelectedIds] = useState<Set<string> | null>(null);
+  useEffect(() => {
+    const ids = (cart?.items ?? []).map((it) => it.id);
+    setSelectedIds((prev) => {
+      if (!cart) return prev;
+      if (prev === null) return new Set(ids);
+      return new Set(ids.filter((id) => prev.has(id)));
+    });
+  }, [cart]);
+
+  const toggleItem = (itemId: string, checked: boolean) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev ?? []);
+      if (checked) next.add(itemId);
+      else next.delete(itemId);
+      return next;
+    });
   // Giá trị số lượng đang gõ dở (chưa gửi API) cho từng dòng — chỉ commit khi
   // rời khỏi ô (onBlur), tránh bắn PUT ở từng ký tự khi gõ số nhiều chữ số.
   const [qtyDraft, setQtyDraft] = useState<Record<string, number>>({});
@@ -101,7 +122,14 @@ export default function CartPage() {
     );
   }
 
-  const subtotal = Number(cart?.subtotal ?? 0);
+  // Chỉ tính tiền những sản phẩm được tick chọn
+  const selectedItems = items.filter((it) => selectedIds?.has(it.id));
+  const selectedCount = selectedItems.reduce((sum, it) => sum + it.quantity, 0);
+  const selectedSubtotal = selectedItems.reduce(
+    (sum, it) => sum + Number(it.product.price) * it.quantity,
+    0,
+  );
+  const allChecked = items.length > 0 && selectedItems.length === items.length;
 
   return (
     <>
@@ -112,11 +140,32 @@ export default function CartPage() {
       <div className="cart">
         <div>
           <div className="cart__list">
+            {/* Hàng chọn tất cả — trạng thái lửng (indeterminate) khi chọn một phần */}
+            <div className="cart__selectall">
+              <Checkbox
+                checked={allChecked}
+                indeterminate={selectedItems.length > 0 && !allChecked}
+                onChange={(e) =>
+                  setSelectedIds(
+                    e.target.checked ? new Set(items.map((it) => it.id)) : new Set(),
+                  )
+                }
+              >
+                Chọn tất cả ({items.length} sản phẩm)
+              </Checkbox>
+            </div>
             {items.map((item) => {
               const price = Number(item.product.price);
               const busy = busyId === item.id;
               return (
                 <div className="citem" key={item.id} data-busy={busy}>
+                  <div className="citem__check">
+                    <Checkbox
+                      checked={selectedIds?.has(item.id) ?? false}
+                      onChange={(e) => toggleItem(item.id, e.target.checked)}
+                      aria-label={`Chọn ${item.product.name} để thanh toán`}
+                    />
+                  </div>
                   <Link className="citem__img" to={`/products/${item.product.id}`}>
                     {item.product.image ? (
                       <img src={item.product.image} alt={item.product.name} loading="lazy" />
@@ -182,8 +231,8 @@ export default function CartPage() {
           <h2 className="csummary__title">Tóm tắt đơn hàng</h2>
 
           <div className="crow">
-            <span>Tạm tính ({itemCount} sản phẩm)</span>
-            <span className="tabular">{formatVND(subtotal)}</span>
+            <span>Tạm tính ({selectedCount} sản phẩm đã chọn)</span>
+            <span className="tabular">{formatVND(selectedSubtotal)}</span>
           </div>
           <div className="crow">
             <span>Phí vận chuyển</span>
@@ -194,7 +243,7 @@ export default function CartPage() {
 
           <div className="crow crow--total">
             <span>Tổng cộng</span>
-            <b className="tabular">{formatVND(subtotal)}</b>
+            <b className="tabular">{formatVND(selectedSubtotal)}</b>
           </div>
 
           <Button
@@ -202,9 +251,17 @@ export default function CartPage() {
             size="large"
             block
             icon={<ArrowRightOutlined />}
-            onClick={() => navigate('/checkout')}
+            disabled={selectedItems.length === 0}
+            onClick={() =>
+              // Mang danh sách đã tick sang trang thanh toán qua state điều hướng
+              navigate('/checkout', {
+                state: { itemIds: selectedItems.map((it) => it.id) },
+              })
+            }
           >
-            Tiến hành thanh toán
+            {selectedItems.length === 0
+              ? 'Chọn sản phẩm để thanh toán'
+              : `Thanh toán (${selectedItems.length} sản phẩm)`}
           </Button>
         </aside>
       </div>

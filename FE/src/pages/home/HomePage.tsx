@@ -5,6 +5,7 @@ import {
   ArrowRightOutlined,
   BellOutlined,
   CustomerServiceOutlined,
+  DownOutlined,
   RobotOutlined,
   SafetyCertificateOutlined,
   TagOutlined,
@@ -127,11 +128,18 @@ const COMMITMENTS = [
 
 const CARD_COLS = { xs: 12, sm: 12, md: 8, lg: 6, xl: 6 };
 
+// "Sản phẩm mới" chỉ hiện ~3 hàng (12 thẻ ở lưới 4 cột desktop) rồi thu gọn
+// sau nút "Xem thêm" — trang chủ không bị một danh sách dài đẩy các khối
+// phía dưới (thương hiệu, trợ lý AI) ra khỏi tầm mắt.
+const NEW_COLLAPSED_COUNT = 12;
+const NEW_FETCH_LIMIT = 24;
+
 export default function HomePage() {
   useDocumentTitle('Trang chủ');
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [newest, setNewest] = useState<ProductListItem[]>([]);
+  const [showAllNew, setShowAllNew] = useState(false);
   const [bestPrice, setBestPrice] = useState<ProductListItem[]>([]);
   const [brands, setBrands] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -146,7 +154,7 @@ export default function HomePage() {
     setError(false);
     Promise.all([
       categoryApi.list(),
-      productApi.list({ sort: 'newest', limit: 10 }),
+      productApi.list({ sort: 'newest', limit: NEW_FETCH_LIMIT }),
       productApi.list({ sort: 'price_asc', limit: 4 }),
       productApi.brands(),
     ])
@@ -340,15 +348,39 @@ export default function HomePage() {
           ) : newest.length === 0 ? (
             <Empty description="Chưa có sản phẩm" />
           ) : (
-            <Row gutter={[16, 16]}>
-              {newest.map((p, i) => (
-                <Col key={p.id} {...CARD_COLS}>
-                  <ScrollReveal delay={i * 50}>
-                    <ProductCard product={p} />
-                  </ScrollReveal>
-                </Col>
-              ))}
-            </Row>
+            <>
+              <Row gutter={[16, 16]}>
+                {(showAllNew ? newest : newest.slice(0, NEW_COLLAPSED_COUNT)).map((p, i) => (
+                  <Col key={p.id} {...CARD_COLS}>
+                    <ScrollReveal delay={(i % NEW_COLLAPSED_COUNT) * 50}>
+                      <ProductCard product={p} />
+                    </ScrollReveal>
+                  </Col>
+                ))}
+              </Row>
+              {newest.length > NEW_COLLAPSED_COUNT && (
+                <div className="hsection__more">
+                  {!showAllNew ? (
+                    <button
+                      type="button"
+                      className="hsection__more-btn"
+                      onClick={() => setShowAllNew(true)}
+                    >
+                      Xem thêm {newest.length - NEW_COLLAPSED_COUNT} sản phẩm
+                      <DownOutlined aria-hidden="true" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="hsection__more-btn"
+                      onClick={() => navigate('/products')}
+                    >
+                      Xem tất cả sản phẩm <ArrowRightOutlined aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </section>
       </ScrollReveal>
@@ -381,17 +413,35 @@ export default function HomePage() {
         <ScrollReveal>
           <section className="hsection" style={{ marginBottom: 0 }} aria-labelledby="sec-brand">
             <div className="hsection__head">
-              <h2 id="sec-brand" className="section-title">
-                Thương hiệu nổi bật
-              </h2>
+              <div>
+                <h2 id="sec-brand" className="section-title">
+                  Thương hiệu nổi bật
+                </h2>
+                <p className="hsection__sub">
+                  Hàng chính hãng từ các thương hiệu được tin dùng nhất
+                </p>
+              </div>
             </div>
             <div className="brands">
-              {brands.map((b) => (
+              {brands.map((b, i) => (
                 <Link key={b} to={`/products?brand=${encodeURIComponent(b)}`} className="brand">
-                  <span className="brand__badge" aria-hidden="true">
+                  {/* Chữ cái đầu phóng to làm hoạ tiết nền — thuần trang trí */}
+                  <span className="brand__mark" aria-hidden="true">
                     {b.charAt(0).toUpperCase()}
                   </span>
-                  <span className="brand__name">{b}</span>
+                  <span
+                    className="brand__badge"
+                    data-tone={i % 3}
+                    aria-hidden="true"
+                  >
+                    {b.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="brand__body">
+                    <span className="brand__name">{b}</span>
+                    <span className="brand__hint">
+                      Xem sản phẩm <ArrowRightOutlined aria-hidden="true" />
+                    </span>
+                  </span>
                 </Link>
               ))}
             </div>
