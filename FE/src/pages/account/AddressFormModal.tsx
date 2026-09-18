@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { App, AutoComplete, Checkbox, Form, Input, Modal, Select } from 'antd';
 import { EnvironmentOutlined } from '@ant-design/icons';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { addressApi } from '../../api/addresses';
 import {
   locationApi,
@@ -56,7 +58,8 @@ function parseAddress(full: string, provinces: Province[]) {
 
 // Modal thêm/sửa địa chỉ. `editing` = null -> thêm mới; có giá trị -> sửa.
 // Địa chỉ chọn theo tầng: Tỉnh/Thành -> Quận/Huyện -> địa chỉ cụ thể (gợi ý
-// từ Photon/OpenStreetMap, không cần key).
+// từ Photon/OpenStreetMap, không cần key) + bản đồ Leaflet/OSM: chọn gợi ý
+// thì ghim vị trí, bấm lên bản đồ thì tự điền địa chỉ gần nhất.
 export default function AddressFormModal({
   open,
   editing,
@@ -149,6 +152,73 @@ export default function AddressFormModal({
     }, 350);
   };
 
+  // ===== Bản đồ Leaflet + tile OpenStreetMap (miễn phí, không key) =====
+  const mapDivRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.CircleMarker | null>(null);
+
+  // Đặt/di chuyển chấm định vị rồi đưa bản đồ tới đó
+  const placeMarker = (lat: number, lon: number) => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (markerRef.current) {
+      markerRef.current.setLatLng([lat, lon]);
+    } else {
+      markerRef.current = L.circleMarker([lat, lon], {
+        radius: 8,
+        color: '#1677ff',
+        fillColor: '#1677ff',
+        fillOpacity: 0.7,
+      }).addTo(map);
+    }
+    map.setView([lat, lon], Math.max(map.getZoom(), 16));
+  };
+
+  // Bấm lên bản đồ: ghim vị trí + điền địa chỉ gần nhất vào ô nhập
+  const onMapClick = (e: L.LeafletMouseEvent) => {
+    placeMarker(e.latlng.lat, e.latlng.lng);
+    locationApi.reverse(e.latlng.lat, e.latlng.lng).then((found) => {
+      if (found) form.setFieldValue('street', found.street);
+    });
+  };
+
+  // Chọn một gợi ý: ô địa chỉ chỉ giữ phần tên/đường (quận/tỉnh đã có ở
+  // 2 select, composeAddress sẽ tự nối) + ghim vị trí lên bản đồ.
+  const onStreetSelect = (value: string) => {
+    const s = suggestions.find((x) => x.description === value);
+    if (!s) return;
+    form.setFieldValue('street', s.street);
+    placeMarker(s.lat, s.lon);
+  };
+
+  // Modal destroyOnClose -> tạo map sau khi mở xong (div đã đúng kích thước),
+  // huỷ khi đóng để lần mở sau tạo lại sạch.
+  const onModalOpenChange = (visible: boolean) => {
+    if (visible) {
+      if (mapDivRef.current && !mapRef.current) {
+        const map = L.map(mapDivRef.current).setView([16.047, 108.206], 5); // giữa VN
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap',
+        }).addTo(map);
+        map.on('click', onMapClick);
+        mapRef.current = map;
+      }
+    } else {
+      mapRef.current?.remove();
+      mapRef.current = null;
+      markerRef.current = null;
+    }
+  };
+
+  // Phòng khi component bị unmount lúc modal còn mở (chuyển trang...)
+  useEffect(
+    () => () => {
+      mapRef.current?.remove();
+    },
+    [],
+  );
+
   const submit = async () => {
     let values: FormValues;
     try {
@@ -186,6 +256,7 @@ export default function AddressFormModal({
       cancelText="Huỷ"
       confirmLoading={saving}
       destroyOnClose
+      afterOpenChange={onModalOpenChange}
     >
       <Form form={form} layout="vertical" requiredMark>
         <Form.Item
@@ -239,7 +310,8 @@ export default function AddressFormModal({
           label="Địa chỉ cụ thể"
           extra={
             <>
-              <EnvironmentOutlined /> Gợi ý địa chỉ từ OpenStreetMap
+              <EnvironmentOutlined /> Gõ để nhận gợi ý, hoặc bấm thẳng lên bản
+              đồ để ghim vị trí
             </>
           }
           rules={[
@@ -250,9 +322,23 @@ export default function AddressFormModal({
           <AutoComplete
             options={suggestions.map((s) => ({ value: s.description, key: s.place_id }))}
             onSearch={onStreetSearch}
+            onSelect={onStreetSelect}
             placeholder="Số nhà, tên đường, phường/xã"
           />
         </Form.Item>
+
+        {/* Bản đồ OpenStreetMap. position:relative + zIndex:0 tạo stacking
+            context riêng để pane của Leaflet không đè dropdown của antd. */}
+        <div
+          ref={mapDivRef}
+          style={{
+            height: 220,
+            borderRadius: 8,
+            marginBottom: 16,
+            position: 'relative',
+            zIndex: 0,
+          }}
+        />
 
         <Form.Item name="is_default" valuePropName="checked">
           <Checkbox>Đặt làm địa chỉ mặc định</Checkbox>

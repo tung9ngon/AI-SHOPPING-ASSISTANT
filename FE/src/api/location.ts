@@ -2,9 +2,9 @@ import axios from 'axios';
 
 // ===== Dữ liệu địa giới + gợi ý địa chỉ cho form sổ địa chỉ =====
 // - Tỉnh/thành & quận/huyện: provinces.open-api.vn (nguồn mở, không cần key).
-// - Gợi ý địa chỉ chi tiết: Photon (photon.komoot.io) — geocoder mở chạy trên
-//   dữ liệu OpenStreetMap, miễn phí, KHÔNG cần key; bbox giới hạn kết quả
-//   trong lãnh thổ Việt Nam.
+// - Gợi ý địa chỉ + định vị ngược (bấm lên bản đồ): Photon (photon.komoot.io)
+//   — geocoder mở chạy trên dữ liệu OpenStreetMap, miễn phí, KHÔNG cần key;
+//   bbox giới hạn kết quả trong lãnh thổ Việt Nam.
 // Gọi bằng axios trần (không qua instance api/) vì đây là dịch vụ ngoài,
 // không được dính baseURL '/api' lẫn cookie đăng nhập của backend.
 
@@ -24,28 +24,45 @@ export interface District {
 
 export interface AddressPrediction {
   place_id: string;
-  description: string;
+  description: string; // nhãn đầy đủ hiện trong dropdown, vd "49 Phố Nguyễn Thái Học, Ba Đình, Hà Nội"
+  street: string; // phần tên/số nhà + đường — điền vào ô "Địa chỉ cụ thể" (quận/tỉnh đã có ở 2 select)
+  lat: number;
+  lon: number;
 }
 
-interface PhotonProperties {
-  osm_type?: string;
-  osm_id?: number;
-  name?: string;
-  housenumber?: string;
-  street?: string;
-  district?: string;
-  city?: string;
-  state?: string;
+interface PhotonFeature {
+  properties: {
+    osm_type?: string;
+    osm_id?: number;
+    name?: string;
+    housenumber?: string;
+    street?: string;
+    district?: string;
+    city?: string;
+    state?: string;
+  };
+  geometry?: { coordinates?: [number, number] };
 }
 
-// Ghép nhãn gợi ý "tên/số nhà + đường, phường/quận, thành phố" từ thuộc tính
-// Photon; bỏ phần trùng (vd city và state cùng là "Thành phố Hồ Chí Minh").
-function describe(p: PhotonProperties): string {
+// Dedupe giữ thứ tự: city và state hay cùng là "Thành phố Hồ Chí Minh".
+const uniq = (arr: (string | undefined)[]) =>
+  arr.filter((v, i): v is string => !!v && arr.indexOf(v) === i);
+
+function toPrediction(f: PhotonFeature, fallbackId: number): AddressPrediction | null {
+  const p = f.properties;
+  const [lon, lat] = f.geometry?.coordinates ?? [];
+  if (lon == null || lat == null) return null;
   const road =
     p.housenumber && p.street ? `${p.housenumber} ${p.street}` : p.street;
-  return [p.name, road, p.district, p.city, p.state]
-    .filter((v, i, arr): v is string => !!v && arr.indexOf(v) === i)
-    .join(', ');
+  const parts = uniq([p.name, road, p.district, p.city, p.state]);
+  if (parts.length === 0) return null;
+  return {
+    place_id: `${p.osm_type ?? ''}${p.osm_id ?? fallbackId}`,
+    description: parts.join(', '),
+    street: uniq([p.name, road]).join(', ') || parts[0],
+    lat,
+    lon,
+  };
 }
 
 // Danh sách tỉnh đổi ~không bao giờ trong một phiên -> cache module-level,
@@ -73,7 +90,7 @@ export const locationApi = {
   async suggest(input: string): Promise<AddressPrediction[]> {
     if (input.trim().length < 3) return [];
     try {
-      const res = await axios.get<{ features?: { properties: PhotonProperties }[] }>(
+      const res = await axios.get<{ features?: PhotonFeature[] }>(
         `${PHOTON_API}/api/`,
         { params: { q: input.trim(), limit: 8, bbox: VN_BBOX } },
       );
@@ -81,18 +98,29 @@ export const locationApi = {
       const seen = new Set<string>();
       const out: AddressPrediction[] = [];
       for (const f of res.data.features ?? []) {
-        const description = describe(f.properties);
-        if (!description || seen.has(description)) continue;
-        seen.add(description);
-        out.push({
-          place_id: `${f.properties.osm_type ?? ''}${f.properties.osm_id ?? out.length}`,
-          description,
-        });
+        const pred = toPrediction(f, out.length);
+        if (!pred || seen.has(pred.description)) continue;
+        seen.add(pred.description);
+        out.push(pred);
         if (out.length >= 5) break;
       }
       return out;
     } catch {
       return [];
+    }
+  },
+
+  // Định vị ngược: bấm lên bản đồ -> địa chỉ gần nhất. null khi không có/lỗi.
+  async reverse(lat: number, lon: number): Promise<AddressPrediction | null> {
+    try {
+      const res = await axios.get<{ features?: PhotonFeature[] }>(
+        `${PHOTON_API}/reverse`,
+        { params: { lat, lon } },
+      );
+      const f = res.data.features?.[0];
+      return f ? toPrediction(f, 0) : null;
+    } catch {
+      return null;
     }
   },
 };

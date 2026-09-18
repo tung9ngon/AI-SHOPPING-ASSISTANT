@@ -12,6 +12,9 @@
   display: grid;
   place-items: center;
   min-height: 460px;
+  /* Kéo hero lên bù đúng padding-top của .ucontent để nền navy chạm sát
+     viền cam của header, không lộ dải nền trang ở giữa. */
+  margin-top: calc(-1 * var(--space-6));
   padding-block: var(--space-16) var(--space-24);
   /* Quầng cam lệch phải giữ hơi ấm thương hiệu trên nền navy tối, đủ tối để
      các tia trắng và hoạ tiết trống đồng nổi rõ. */
@@ -594,6 +597,8 @@
 @media (max-width: 767px) {
   .hero {
     min-height: 380px;
+    /* Mobile .ucontent chỉ đệm trên var(--space-4) nên bù đúng chừng đó */
+    margin-top: calc(-1 * var(--space-4));
     padding-block: var(--space-10) var(--space-16);
   }
   .hero__drum {
