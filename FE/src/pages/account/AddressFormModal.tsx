@@ -3,10 +3,9 @@ import { App, AutoComplete, Checkbox, Form, Input, Modal, Select } from 'antd';
 import { EnvironmentOutlined } from '@ant-design/icons';
 import { addressApi } from '../../api/addresses';
 import {
-  GOONG_KEY,
   locationApi,
+  type AddressPrediction,
   type District,
-  type GoongPrediction,
   type Province,
 } from '../../api/location';
 import { getErrorMessage } from '../../api/client';
@@ -22,7 +21,7 @@ interface FormValues {
   is_default?: boolean;
 }
 
-// Ghép địa chỉ đầy đủ; nếu phần nhập tay/chọn từ gợi ý Goong ĐÃ chứa sẵn
+// Ghép địa chỉ đầy đủ; nếu phần nhập tay/chọn từ gợi ý ĐÃ chứa sẵn
 // quận/tỉnh thì không nối lặp lại nữa.
 function composeAddress(street: string, district: string, province: string): string {
   const s = street.trim().replace(/[,\s]+$/, '');
@@ -56,8 +55,8 @@ function parseAddress(full: string, provinces: Province[]) {
 }
 
 // Modal thêm/sửa địa chỉ. `editing` = null -> thêm mới; có giá trị -> sửa.
-// Địa chỉ chọn theo tầng: Tỉnh/Thành -> Quận/Huyện -> địa chỉ cụ thể (có gợi ý
-// từ Goong.io khi cấu hình VITE_GOONG_API_KEY).
+// Địa chỉ chọn theo tầng: Tỉnh/Thành -> Quận/Huyện -> địa chỉ cụ thể (gợi ý
+// từ Photon/OpenStreetMap, không cần key).
 export default function AddressFormModal({
   open,
   editing,
@@ -76,7 +75,7 @@ export default function AddressFormModal({
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [districtsLoading, setDistrictsLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState<GoongPrediction[]>([]);
+  const [suggestions, setSuggestions] = useState<AddressPrediction[]>([]);
   const suggestTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const loadDistricts = (provinceCode: number) => {
@@ -134,9 +133,8 @@ export default function AddressFormModal({
     if (province) loadDistricts(province.code);
   };
 
-  // Gợi ý Goong: debounce 350ms, kèm ngữ cảnh quận/tỉnh đã chọn để kết quả sát hơn
+  // Gợi ý địa chỉ: debounce 350ms, kèm ngữ cảnh quận/tỉnh đã chọn để kết quả sát hơn
   const onStreetSearch = (text: string) => {
-    if (!GOONG_KEY) return;
     clearTimeout(suggestTimer.current);
     if (text.trim().length < 3) {
       setSuggestions([]);
@@ -240,11 +238,9 @@ export default function AddressFormModal({
           name="street"
           label="Địa chỉ cụ thể"
           extra={
-            GOONG_KEY ? (
-              <>
-                <EnvironmentOutlined /> Gợi ý địa chỉ bởi Goong.io
-              </>
-            ) : undefined
+            <>
+              <EnvironmentOutlined /> Gợi ý địa chỉ từ OpenStreetMap
+            </>
           }
           rules={[
             { required: true, message: 'Vui lòng nhập địa chỉ cụ thể' },
