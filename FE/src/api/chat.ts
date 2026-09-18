@@ -12,7 +12,7 @@ export interface ChatResponse {
 }
 
 export const chatApi = {
-  // POST /api/chat -> Gemini (BE proxy). history: chỉ text, role user|model.
+  // POST /api/chat -> FPT AI Marketplace (BE proxy). history: chỉ text, role user|model.
   send: (message: string, history: ChatHistoryItem[]) =>
     api.post<ChatResponse>('/chat', { message, history }),
 };
