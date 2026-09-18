@@ -7,7 +7,6 @@ import {
   Drawer,
   Dropdown,
   Grid,
-  Input,
   Menu,
   Tooltip,
 } from 'antd';
@@ -26,13 +25,14 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { notificationApi } from '../api/notifications';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import ChatWidget from '../components/ChatWidget/ChatWidget';
 import Logo from '../components/Logo';
+import SearchSuggest from '../components/SearchSuggest';
 import './UserLayout.css';
 
 const { useBreakpoint } = Grid;
@@ -41,7 +41,6 @@ export default function UserLayout() {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const { itemCount } = useCart();
   const { mode, toggle } = useTheme();
-  const navigate = useNavigate();
   const location = useLocation();
   const screens = useBreakpoint();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -67,12 +66,6 @@ export default function UserLayout() {
   }, [isAuthenticated, location.pathname]);
 
   const isMobile = !screens.md;
-
-  const onSearch = (value: string) => {
-    const q = value.trim();
-    navigate(q ? `/products?search=${encodeURIComponent(q)}` : '/products');
-    setDrawerOpen(false);
-  };
 
   const accountMenu: MenuProps['items'] = isAuthenticated
     ? [
@@ -152,14 +145,7 @@ export default function UserLayout() {
 
           {!isMobile && (
             <div className="uheader__search">
-              <Input.Search
-                placeholder="Bạn cần tìm sản phẩm gì?"
-                allowClear
-                enterButton
-                size="large"
-                onSearch={onSearch}
-                aria-label="Tìm kiếm sản phẩm"
-              />
+              <SearchSuggest size="large" onNavigate={() => setDrawerOpen(false)} />
             </div>
           )}
 
@@ -223,13 +209,7 @@ export default function UserLayout() {
         {/* Trên mobile ô tìm kiếm nằm thành hàng riêng thay vì bị giấu trong drawer */}
         {isMobile && (
           <div className="container uheader__mobile-search">
-            <Input.Search
-              placeholder="Bạn cần tìm sản phẩm gì?"
-              allowClear
-              enterButton
-              onSearch={onSearch}
-              aria-label="Tìm kiếm sản phẩm"
-            />
+            <SearchSuggest onNavigate={() => setDrawerOpen(false)} />
           </div>
         )}
       </header>

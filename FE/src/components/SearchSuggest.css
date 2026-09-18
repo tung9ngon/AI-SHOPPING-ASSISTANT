@@ -1,0 +1,35 @@
+/* Một dòng gợi ý trong dropdown tìm kiếm: ảnh nhỏ + tên + giá */
+.ssuggest__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-block: var(--space-1);
+}
+.ssuggest__img {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken);
+}
+.ssuggest__img--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-subtle);
+}
+.ssuggest__info {
+  min-width: 0;
+}
+.ssuggest__name {
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ssuggest__price {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-price);
+}
