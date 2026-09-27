@@ -16,7 +16,6 @@ import {
 import { OrderStatus } from '../../database/order.entity';
 import { User } from '../../database/user.entity';
 
-
 const COMPLETED_ORDER_STATUS: OrderStatus = 'paid';
 
 // Từ vô nghĩa trong câu hỏi mua sắm - bỏ đi trước khi tra cứu cho trợ lý AI.
@@ -47,6 +46,7 @@ export class ProductService {
   async findAll(query: QueryProductDto) {
     const {
       search,
+      industryId,
       categoryId,
       brand,
       tag,
@@ -70,6 +70,10 @@ export class ProductService {
 
     if (search) {
       qb.andWhere('product.name ILIKE :search', { search: `%${search}%` });
+    }
+    // Lọc theo ngành học (bao gồm tất cả categories trong ngành)
+    if (industryId) {
+      qb.andWhere('category.industry_id = :industryId', { industryId });
     }
     if (categoryId) {
       qb.andWhere('product.category_id = :categoryId', { categoryId });

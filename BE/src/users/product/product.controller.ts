@@ -32,22 +32,22 @@ export class ProductController {
     return this.productService.findAllBrands();
   }
 
-  // GET /api/products/:id - chi tiết sản phẩm
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.productService.findOne(id);
-  }
-
-  // GET /api/products/:id/specs - thông số kỹ thuật
+  // GET /api/products/:id/specs - thông số kỹ thuật (đặt TRƯỚC :id để tránh conflict)
   @Get(':id/specs')
   findSpecs(@Param('id') id: string) {
     return this.productService.findSpecs(id);
   }
 
-  // GET /api/products/:id/reviews - danh sách đánh giá (phân trang)
+  // GET /api/products/:id/reviews - danh sách đánh giá (phân trang) (đặt TRƯỚC :id để tránh conflict)
   @Get(':id/reviews')
   findReviews(@Param('id') id: string, @Query() query: QueryProductReviewDto) {
     return this.productService.findReviews(id, query);
+  }
+
+  // GET /api/products/:id - chi tiết sản phẩm (đặt SAU cùng vì có param động)
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.productService.findOne(id);
   }
 
   // POST /api/products/:id/reviews - viết đánh giá (yêu cầu đăng nhập + đã mua hàng)

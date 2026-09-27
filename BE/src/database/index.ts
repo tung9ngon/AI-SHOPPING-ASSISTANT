@@ -1,6 +1,7 @@
 export * from './user.entity';
 export * from './user-profile.entity';
 export * from './category.entity';
+export * from './industry.entity';
 export * from './product.entity';
 export * from './product-spec.entity';
 export * from './tag.entity';

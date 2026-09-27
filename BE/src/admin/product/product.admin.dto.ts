@@ -25,6 +25,10 @@ export class QueryAdminProductDto {
 
   @IsOptional()
   @IsUUID()
+  industryId?: string; // Lọc theo ngành học
+
+  @IsOptional()
+  @IsUUID()
   categoryId?: string;
 
   @IsOptional()

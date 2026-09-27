@@ -5,6 +5,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
   Min,
   MinLength,
@@ -29,6 +30,10 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsUUID()
+  industryId?: string;
 }
 
 // PATCH /api/admin/categories/:id
@@ -44,6 +49,10 @@ export class QueryCategoryDto {
   @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsUUID()
+  industryId?: string;
 
   @IsOptional()
   @Type(() => Number)

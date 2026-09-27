@@ -10,6 +10,7 @@ import { ProductImage } from '../../database/product-image.entity';
 import { ProductSpec } from '../../database/product-spec.entity';
 import { ProductReview } from '../../database/product-review.entity';
 import { Tag } from '../../database/tag.entity';
+import { Category } from '../../database/category.entity';
 import { CloudinaryService } from '../../cloudinary/Cloudinary.service';
 import {
   CreateProductDto,
@@ -35,6 +36,8 @@ export class AdminProductService {
     private readonly tagRepo: Repository<Tag>,
     @InjectRepository(ProductReview)
     private readonly reviewRepo: Repository<ProductReview>,
+    @InjectRepository(Category)
+    private readonly categoryRepo: Repository<Category>,
     private readonly cloudinaryService: CloudinaryService,
   ) { }
 
@@ -48,6 +51,7 @@ export class AdminProductService {
   async findAll(query: QueryAdminProductDto) {
     const {
       search,
+      industryId,
       categoryId,
       brand,
       isActive,
@@ -56,9 +60,15 @@ export class AdminProductService {
       limit = 20,
     } = query;
     const buildFilteredQb = () => {
-      const qb = this.productRepo.createQueryBuilder('product');
+      const qb = this.productRepo
+        .createQueryBuilder('product')
+        .leftJoin('product.category', 'category');
       if (search) {
         qb.andWhere('product.name ILIKE :search', { search: `%${search}%` });
+      }
+      // Lọc theo ngành học (bao gồm tất cả categories trong ngành)
+      if (industryId) {
+        qb.andWhere('category.industry_id = :industryId', { industryId });
       }
       if (categoryId) {
         qb.andWhere('product.category_id = :categoryId', { categoryId });
@@ -78,7 +88,7 @@ export class AdminProductService {
       return { items: [], total: 0, page, limit, totalPages: 0 };
     }
 
-    const idQb = buildFilteredQb().select(['product.id']);
+    const idQb = buildFilteredQb().select(['product.id', 'product.created_at']);
     switch (sort) {
       case 'price_asc':
         idQb.orderBy('product.price', 'ASC');
