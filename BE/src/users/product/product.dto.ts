@@ -19,7 +19,11 @@ export class QueryProductDto {
 
   @IsOptional()
   @IsUUID()
-  categoryId?: string;
+  industryId?: string; // Lọc theo ngành học (bao gồm tất cả categories trong ngành)
+
+  @IsOptional()
+  @IsUUID()
+  categoryId?: string; // Lọc theo danh mục
 
   // Lọc theo hãng, vd: ?brand=Apple
   @IsOptional()

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Cart } from '../../database/cart.entity';
@@ -85,29 +85,42 @@ export class CartService {
 
     const quantity = dto.quantity ?? 1;
 
-    let item = await this.cartItemRepo.findOne({
+    // Kiểm tra stock trước khi thêm vào giỏ
+    let existingItem = await this.cartItemRepo.findOne({
       where: { cart_id: cart.id, product_id: dto.product_id },
     });
 
-    if (item) {
+    const currentQuantityInCart = existingItem?.quantity ?? 0;
+    if (product.stock_quantity < currentQuantityInCart + quantity) {
+      throw new BadRequestException(
+        `Sản phẩm "${product.name}" chỉ còn ${product.stock_quantity} trong kho. Hiện bạn đã có ${currentQuantityInCart} trong giỏ.`,
+      );
+    }
+
+    if (existingItem) {
       // Sản phẩm đã có trong giỏ -> cộng dồn số lượng
-      item.quantity += quantity;
-      item = await this.cartItemRepo.save(item);
+      existingItem.quantity += quantity;
+      existingItem = await this.cartItemRepo.save(existingItem);
+      return {
+        id: existingItem.id,
+        product_id: existingItem.product_id,
+        quantity: existingItem.quantity,
+        added_at: existingItem.added_at,
+      };
     } else {
-      item = this.cartItemRepo.create({
+      const newItem = this.cartItemRepo.create({
         cart_id: cart.id,
         product_id: dto.product_id,
         quantity,
       });
-      item = await this.cartItemRepo.save(item);
+      const savedItem = await this.cartItemRepo.save(newItem);
+      return {
+        id: savedItem.id,
+        product_id: savedItem.product_id,
+        quantity: savedItem.quantity,
+        added_at: savedItem.added_at,
+      };
     }
-
-    return {
-      id: item.id,
-      product_id: item.product_id,
-      quantity: item.quantity,
-      added_at: item.added_at,
-    };
   }
 
   // PUT /api/cart/items/:id

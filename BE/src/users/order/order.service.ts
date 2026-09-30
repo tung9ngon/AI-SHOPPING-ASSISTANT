@@ -7,6 +7,7 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import { Order, OrderStatus } from '../../database/order.entity';
 import { OrderItem } from '../../database/order-item.entity';
+import { Product } from '../../database/product.entity';
 import { Cart } from '../../database/cart.entity';
 import { CartItem } from '../../database/cart-item.entity';
 import { DiscountCode, DiscountType } from '../../database/discount-code.entity';
@@ -127,6 +128,12 @@ export class OrderService {
             `Sản phẩm "${item.product?.name ?? item.product_id}" hiện không khả dụng`,
           );
         }
+        // Kiểm tra stock đủ không
+        if (item.product.stock_quantity < item.quantity) {
+          throw new BadRequestException(
+            `Sản phẩm "${item.product.name}" chỉ còn ${item.product.stock_quantity} trong kho, không đủ để đặt ${item.quantity}`,
+          );
+        }
       }
 
       const subtotal = cartItems.reduce(
@@ -229,6 +236,26 @@ export class OrderService {
         }),
       );
       await orderItemRepo.save(orderItems);
+
+      // Trừ stock sau khi đặt hàng thành công (atomic update để tránh race condition)
+      const productRepo = manager.getRepository(Product);
+      for (const item of cartItems) {
+        const result = await productRepo
+          .createQueryBuilder()
+          .update()
+          .set({ stock_quantity: () => `stock_quantity - ${item.quantity}` })
+          .where('id = :id AND stock_quantity >= :qty', {
+            id: item.product_id,
+            qty: item.quantity,
+          })
+          .execute();
+
+        if (result.affected === 0) {
+          throw new BadRequestException(
+            `Sản phẩm "${item.product?.name}" không đủ stock (có thể đã bị đặt bởi người khác)`,
+          );
+        }
+      }
 
       if (discount) {
         discount.used_count += 1;
@@ -391,26 +418,46 @@ export class OrderService {
     };
   }
 
-  // PUT /api/orders/:id/cancel — không đổi
+  // PUT /api/orders/:id/cancel — hoàn lại stock khi huỷ
   async cancel(userId: string, id: string) {
-    const order = await this.orderRepo.findOne({
-      where: { id, user_id: userId },
+    return this.dataSource.transaction(async (manager) => {
+      const orderRepo = manager.getRepository(Order);
+      const orderItemRepo = manager.getRepository(OrderItem);
+      const productRepo = manager.getRepository(Product);
+
+      const order = await orderRepo.findOne({
+        where: { id, user_id: userId },
+      });
+      if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
+
+      if (!CANCELABLE_STATUSES.includes(order.status)) {
+        throw new BadRequestException(
+          'Đơn hàng đã được xử lý, không thể huỷ',
+        );
+      }
+
+      // Lấy các item trong đơn để hoàn lại stock
+      const orderItems = await orderItemRepo.find({
+        where: { order_id: id },
+      });
+
+      // Hoàn lại stock cho từng sản phẩm
+      for (const item of orderItems) {
+        await productRepo.increment(
+          { id: item.product_id },
+          'stock_quantity',
+          item.quantity,
+        );
+      }
+
+      order.status = 'cancelled';
+      const saved = await orderRepo.save(order);
+
+      return {
+        id: saved.id,
+        status: saved.status,
+        updated_at: saved.updated_at,
+      };
     });
-    if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
-
-    if (!CANCELABLE_STATUSES.includes(order.status)) {
-      throw new BadRequestException(
-        'Đơn hàng đã được xử lý, không thể huỷ',
-      );
-    }
-
-    order.status = 'cancelled';
-    const saved = await this.orderRepo.save(order);
-
-    return {
-      id: saved.id,
-      status: saved.status,
-      updated_at: saved.updated_at,
-    };
   }
 }

@@ -21,7 +21,7 @@ export class OrderItem {
   product_id: string;
 
   @ManyToOne(() => Product, (product) => product.order_items, {
-    onDelete: 'CASCADE',
+    onDelete: 'RESTRICT', // Không cho xóa sản phẩm nếu còn trong order để bảo toàn lịch sử
     onUpdate: 'CASCADE',
   })
   @JoinColumn({ name: 'product_id' })

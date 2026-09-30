@@ -25,6 +25,8 @@ import { NotificationModule } from './users/notification/notification.module';
 import { ProfileModule } from './users/profile/profile.module';
 import { AdminStatisticsModule } from './admin/statistics/statistics.admin.module';
 import { ProfileAdminModule } from './admin/profile/profile.admin.module';
+import { IndustryModule } from './users/industry/industry.module';
+import { IndustryAdminModule } from './admin/industry/industry.admin.module';
 
 @Module({
   imports: [
@@ -75,6 +77,8 @@ import { ProfileAdminModule } from './admin/profile/profile.admin.module';
     ProfileModule,
     AdminStatisticsModule,
     ProfileAdminModule,
+    IndustryModule,
+    IndustryAdminModule,
   ],
 })
 class AppModule {}

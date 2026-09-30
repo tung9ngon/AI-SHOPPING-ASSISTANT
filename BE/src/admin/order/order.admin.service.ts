@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Order } from '../../database/order.entity';
 import { OrderItem } from '../../database/order-item.entity';
+import { Product } from '../../database/product.entity';
 import { QueryAdminOrderDto, UpdateOrderStatusDto } from './order.admin.dto';
 import { PaymentCoreService } from '../../users/payment/payment-core.service';
 import { NotificationService } from '../../users/notification/notification.service';
@@ -136,6 +137,24 @@ export class AdminOrderService {
 
       order.status = dto.status;
       const saved = await orderRepo.save(order);
+
+      // Hoàn lại stock khi huỷ đơn
+      if (dto.status === 'cancelled') {
+        const orderItemRepo = queryRunner.manager.getRepository(OrderItem);
+        const productRepo = queryRunner.manager.getRepository(Product);
+
+        const orderItems = await orderItemRepo.find({
+          where: { order_id: id },
+        });
+
+        for (const item of orderItems) {
+          await productRepo.increment(
+            { id: item.product_id },
+            'stock_quantity',
+            item.quantity,
+          );
+        }
+      }
 
       if (dto.status === 'shipped' && order.payment?.method === 'cod') {
         await this.paymentCore.confirmCodForOrder(order.id, queryRunner);

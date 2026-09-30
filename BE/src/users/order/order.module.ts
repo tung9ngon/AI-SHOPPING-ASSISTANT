@@ -5,6 +5,7 @@ import { OrderItem } from '../../database/order-item.entity';
 import { Cart } from '../../database/cart.entity';
 import { CartItem } from '../../database/cart-item.entity';
 import { DiscountCode } from '../../database/discount-code.entity';
+import { Product } from '../../database/product.entity';
 import { ProductImage } from '../../database/product-image.entity';
 import { Address } from '../../database/address.entity';
 import { NotificationModule } from '../notification/notification.module';
@@ -19,6 +20,7 @@ import { OrderController } from './order.controller';
       Cart,
       CartItem,
       DiscountCode,
+      Product,
       ProductImage,
       Address,
     ]),

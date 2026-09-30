@@ -3,9 +3,12 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  ManyToOne,
   OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import { Product } from './product.entity';
+import { Industry } from './industry.entity';
 
 @Entity('categories')
 export class Category {
@@ -29,6 +32,17 @@ export class Category {
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;
+
+  // Foreign key đến Industry
+  @Column({ name: 'industry_id', type: 'uuid', nullable: true })
+  industry_id: string | null;
+
+  @ManyToOne(() => Industry, (industry) => industry.categories, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'industry_id' })
+  industry: Industry | null;
 
   @OneToMany(() => Product, (product) => product.category)
   products: Product[];
